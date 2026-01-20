@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSave - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Hello {{ name }} 👋</h1>
+            <p>Ton état financier est : <strong>{{ status }}</strong></p>
+        </header>
+
+        <main>
+            <div class="serenity-circle">
+                <div class="score-value">{{ score }}</div>
+                <div class="score-label">Sérénité</div>
+            </div>
+
+            <div class="info-card">
+                <h3>Conseil du Coach IA</h3>
+                <p>Ton score est de {{ score }}/100. Tu es sur la bonne voie pour tes objectifs !</p>
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <div class="nav-item">🏠<span>Accueil</span></div>
+            <div class="nav-item">📈<span>Analyse</span></div>
+            <div class="nav-item">🤖<span>Coach</span></div>
+            <div class="nav-item">🎯<span>Objectifs</span></div>
+        </nav>
+    </div>
+</body>
+</html>
