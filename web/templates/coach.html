@@ -53,5 +53,49 @@
             <a href="/goals" class="nav-link">🎯<span>Goals</span></a>
         </nav>
     </div>
+    <script>
+    const sendBtn = document.querySelector('.send-btn');
+    const chatInput = document.querySelector('.input-wrapper input');
+    const chatContainer = document.querySelector('.chat-container');
+
+    function addMessage(text, isUser = true) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        messageDiv.classList.add(isUser ? 'user-message' : 'ai-message');
+        
+        const now = new Date();
+        const timeStr = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+
+        messageDiv.innerHTML = `
+            <p>${text}</p>
+            <span class="time">${timeStr} AM</span>
+        `;
+        
+        // On insère le message avant les boutons d'action
+        const quickActions = document.querySelector('.quick-actions');
+        chatContainer.insertBefore(messageDiv, quickActions);
+        
+        // Auto-scroll vers le bas
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    sendBtn.addEventListener('click', () => {
+        const text = chatInput.value.trim();
+        if (text) {
+            addMessage(text, true);
+            chatInput.value = '';
+            
+            // Simulation d'une réponse de l'IA après 1 seconde
+            setTimeout(() => {
+                addMessage("I'm analyzing your request... I'll have a personalized tip for you in a moment! ✨", false);
+            }, 1000);
+        }
+    });
+
+    // Permettre d'envoyer avec la touche "Entrée"
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendBtn.click();
+    });
+</script>
 </body>
 </html>
