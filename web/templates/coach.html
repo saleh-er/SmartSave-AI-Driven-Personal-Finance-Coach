@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSave - AI Coach</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="coach-header">
+            <div class="ai-avatar">✨</div>
+            <div class="coach-info">
+                <h1>AI Coach</h1>
+                <p class="status-online">● Online & ready to help</p>
+            </div>
+        </header>
+
+        <main class="chat-container">
+            <div class="message ai-message">
+                <p>Hello Julie! How can I help you improve your financial health today?</p>
+                <span class="time">10:30 AM</span>
+            </div>
+
+            <div class="message user-message">
+                <p>Show me my spending trends</p>
+                <span class="time">10:31 AM</span>
+            </div>
+
+            <div class="message ai-message">
+                <p>I noticed you spend <span class="highlight">20% more on Uber</span> this month. Want to set a limit?</p>
+                <span class="time">10:31 AM</span>
+            </div>
+
+            <div class="quick-actions">
+                <button class="action-btn primary">Yes, set limit</button>
+                <button class="action-btn secondary">Explain why</button>
+            </div>
+        </main>
+
+        <div class="chat-input-area">
+            <div class="input-wrapper">
+                <input type="text" placeholder="Ask me anything...">
+                <button class="send-btn">🚀</button>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <a href="/" class="nav-link">🏠<span>Home</span></a>
+            <a href="/analytics" class="nav-link">📈<span>Stats</span></a>
+            <a href="/coach" class="nav-link active">✨<span>Coach</span></a>
+            <a href="/goals" class="nav-link">🎯<span>Goals</span></a>
+        </nav>
+    </div>
+</body>
+</html>

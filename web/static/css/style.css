@@ -177,3 +177,132 @@ body {
     font-size: 1.3rem;
     margin-bottom: 4px;
 }
+/* --- Coach Specific Styles --- */
+
+.coach-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px 0;
+    text-align: left;
+}
+
+.ai-avatar {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-gradient);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+.status-online {
+    color: var(--accent-teal);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 150px;
+}
+
+/* Bulles de messages */
+.message {
+    max-width: 80%;
+    padding: 15px;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    position: relative;
+    line-height: 1.4;
+}
+
+.ai-message {
+    align-self: flex-start;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-bottom-left-radius: 5px;
+}
+
+.user-message {
+    align-self: flex-end;
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom-right-radius: 5px;
+}
+
+.time {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-top: 5px;
+}
+
+/* Boutons d'action */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-btn {
+    padding: 15px;
+    border-radius: 15px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.action-btn.primary {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.action-btn.secondary {
+    background: var(--glass-bg);
+    color: white;
+    border: 1px solid var(--glass-border);
+}
+
+/* Input Area */
+.chat-input-area {
+    position: fixed;
+    bottom: 90px; /* Juste au-dessus de la nav */
+    left: 20px;
+    right: 20px;
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.input-wrapper {
+    background: rgba(30, 41, 59, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--glass-border);
+}
+
+.input-wrapper input {
+    background: transparent;
+    border: none;
+    color: white;
+    flex: 1;
+    padding: 10px;
+    outline: none;
+}
+
+.send-btn {
+    background: var(--primary-gradient);
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    cursor: pointer;
+}
