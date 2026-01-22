@@ -1,28 +1,24 @@
 # services/serenity_engine.py
 
 class SerenityEngine:
-    """
-    Logique métier pour le calcul du Score de Sérénité.
-    """
-    
     @staticmethod
-    def calculate_score(income: float, expenses: float, savings: float) -> float:
-        """
-        Calcule un score sur 100 basé sur les finances de l'utilisateur.
-        """
-        if income <= 0:
-            return 0.0
+    def analyze_finances(transactions: list):
+        """Calcule le score et génère une analyse rapide pour l'IA."""
+        if not transactions:
+            return {"score": 50, "status": "No data", "warning": "No transactions found."}
+
+        total_spent = sum(t['amount'] for t in transactions)
+        essential = sum(t['amount'] for t in transactions if t.get('is_essential', False))
         
-        # Calcul du ratio d'épargne (50% du score)
-        # Un bon ratio est de 20% (0.2)
-        savings_ratio = savings / income
-        savings_score = (savings_ratio / 0.2) * 50
+        # Calcul du score basé sur le ratio 50/30/20 (Besoin/Envie/Épargne)
+        ratio = (essential / total_spent) if total_spent > 0 else 0
+        score = 100 - (abs(0.5 - ratio) * 100) # Plus on est proche de 50% de besoins, plus le score est haut
         
-        # Calcul du ratio de dépenses (50% du score)
-        # On veut que les dépenses soient < 70% du revenu
-        expense_ratio = expenses / income
-        expense_score = (1 - expense_ratio) * 50
+        status = "Excellent" if score > 80 else "Stable" if score > 60 else "Critical"
         
-        # Somme des scores et limitation entre 0 et 100
-        total_score = savings_score + expense_score
-        return round(max(0.0, min(100.0, total_score)), 2)
+        return {
+            "score": round(score, 1),
+            "status": status,
+            "total_spent": round(total_spent, 2),
+            "savings_potential": round(total_spent - essential, 2)
+        }

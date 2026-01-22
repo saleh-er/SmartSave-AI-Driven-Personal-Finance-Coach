@@ -1,54 +1,179 @@
+/* --- CONFIGURATION GLOBALE --- */
 :root {
-    --bg-color: #0F172A;
-    --primary-grad: linear-gradient(135deg, #6366F1, #10B981);
-    --card-bg: rgba(255, 255, 255, 0.05);
+    --bg-dark: #0B1120;
+    --glass-bg: rgba(30, 41, 59, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --primary-gradient: linear-gradient(135deg, #6366F1 0%, #10B981 100%);
+    --accent-teal: #10B981;
+    --text-main: #FFFFFF;
+    --text-secondary: #94A3B8;
 }
 
 body {
-    background-color: var(--bg-color);
-    color: white;
-    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, sans-serif;
     margin: 0;
     display: flex;
     justify-content: center;
+    min-height: 100vh;
 }
 
 .app-container {
     width: 100%;
     max-width: 400px;
     padding: 20px;
+    padding-bottom: 120px; /* Espace pour la navigation flottante */
+}
+
+/* --- HEADER --- */
+.brand-header {
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.logo {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.logo span {
+    color: var(--accent-teal);
+}
+
+.tagline {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+/* --- SCORE RING (LE CERCLE PRO) --- */
+.score-container {
+    display: flex;
+    justify-content: center;
+    margin: 40px 0;
+}
+
+.serenity-ring {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    /* Effet d'anneau brillant dégradé */
+    background: var(--bg-dark);
+    border: 4px solid transparent;
+    background-image: linear-gradient(var(--bg-dark), var(--bg-dark)), var(--primary-gradient);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    box-shadow: 0 0 50px rgba(99, 102, 241, 0.2);
+}
+
+.score-content {
     text-align: center;
 }
 
-.serenity-circle {
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    border: 10px solid #10B981;
-    margin: 40px auto;
+.score-number {
+    display: block;
+    font-size: 4.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.score-text {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* --- CARDS (GLASSMORPHISM) --- */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.card-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.balance-amount {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 10px 0 0;
+}
+
+/* --- AI FEED --- */
+.ai-header {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
-.score-value { font-size: 3rem; font-weight: bold; }
-.score-label { color: #94A3B8; }
-
-.info-card {
-    background: var(--card-bg);
-    padding: 20px;
-    border-radius: 20px;
-    border-left: 5px solid #6366F1;
+.ai-title {
+    font-weight: 700;
 }
 
+.ai-message {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 18px;
+    padding: 15px;
+}
+
+.highlight {
+    color: var(--accent-teal);
+    font-weight: bold;
+}
+
+/* --- NAVIGATION FLOTTANTE --- */
 .bottom-nav {
     position: fixed;
-    bottom: 0;
-    width: 100%;
-    max-width: 400px;
+    bottom: 25px;
+    left: 20px;
+    right: 20px;
+    max-width: 360px;
+    margin: 0 auto;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(20px);
+    border-radius: 30px;
     display: flex;
     justify-content: space-around;
-    padding: 15px 0;
-    background: #1E293B;
+    padding: 10px;
+    border: 1px solid var(--glass-border);
+    z-index: 1000;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: #64748B;
+    font-size: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.nav-link.active {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+.nav-icon-wrapper {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
 }
