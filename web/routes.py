@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Body
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from services.serenity_engine import SerenityEngine
+from api.open_ai_client import AICoach  # On importe ton nouveau client Groq
 
 router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
 
-# Données simulées (Base de données)
+# Initialisation du coach
+coach = AICoach()
+
+# Données simulées
 MOCK_TRANSACTIONS = [
     {"id": 1, "merchant": "Netflix", "amount": 15.99, "category": "Subs", "is_essential": False},
     {"id": 2, "merchant": "Carrefour", "amount": 82.50, "category": "Food", "is_essential": True},
@@ -15,26 +19,39 @@ MOCK_TRANSACTIONS = [
     {"id": 5, "merchant": "Starbucks", "amount": 6.50, "category": "Food", "is_essential": False},
 ]
 
-@router.get("/", response_class=HTMLResponse)
-async def read_home(request: Request):
-    # Utilisation du moteur pour obtenir une analyse complète
+# --- ROUTE API POUR LE CHAT (GROQ) ---
+@router.post("/chat")
+async def chat_with_coach(payload: dict = Body(...)):
+    user_msg = payload.get("message")
+    
+    # CALCUL RÉEL du score au moment du chat
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
     
+    # On prépare la liste des marchands proprement
+    merchants = ", ".join([t['merchant'] for t in MOCK_TRANSACTIONS])
+    
+    # On passe les VRAIES infos à l'IA
+    advice = coach.get_financial_advice(user_msg, analysis["score"], merchants)
+    
+    return {"response": advice}
+
+# --- ROUTES DES PAGES HTML ---
+
+@router.get("/", response_class=HTMLResponse)
+async def read_home(request: Request):
+    analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
     return templates.TemplateResponse("index.html", {
         "request": request,
         "name": "Julie",
         "score": analysis["score"],
         "status": analysis["status"],
         "remaining": 450.00,
-        "transactions": MOCK_TRANSACTIONS[:3] # On n'affiche que les 3 dernières sur l'accueil
+        "transactions": MOCK_TRANSACTIONS[:3]
     })
 
 @router.get("/analytics", response_class=HTMLResponse)
 async def read_analytics(request: Request):
-    # On calcule les stats pour les graphiques
     total_spent = sum(t['amount'] for t in MOCK_TRANSACTIONS)
-    
-    # Groupement par catégorie pour les barres de progression
     categories = {}
     for t in MOCK_TRANSACTIONS:
         categories[t['category']] = categories.get(t['category'], 0) + t['amount']
@@ -47,7 +64,6 @@ async def read_analytics(request: Request):
 
 @router.get("/coach", response_class=HTMLResponse)
 async def read_coach(request: Request):
-    # On prépare un message de bienvenue dynamique
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
     return templates.TemplateResponse("coach.html", {
         "request": request,
@@ -56,7 +72,6 @@ async def read_coach(request: Request):
 
 @router.get("/goals", response_class=HTMLResponse)
 async def read_goals(request: Request):
-    # On définit des objectifs statiques pour l'instant
     user_goals = [
         {"name": "Japan Trip", "current": 1300, "target": 2000, "color": "#6366F1"},
         {"name": "Emergency Fund", "current": 4500, "target": 5000, "color": "#10B981"}

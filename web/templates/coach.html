@@ -58,7 +58,7 @@
     const chatInput = document.querySelector('.input-wrapper input');
     const chatContainer = document.querySelector('.chat-container');
 
-    function addMessage(text, isUser = true) {
+    async function addMessage(text, isUser = true) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
         messageDiv.classList.add(isUser ? 'user-message' : 'ai-message');
@@ -68,15 +68,44 @@
 
         messageDiv.innerHTML = `
             <p>${text}</p>
-            <span class="time">${timeStr} AM</span>
+            <span class="time">${timeStr}</span>
         `;
         
-        // On insère le message avant les boutons d'action
         const quickActions = document.querySelector('.quick-actions');
         chatContainer.insertBefore(messageDiv, quickActions);
-        
-        // Auto-scroll vers le bas
         window.scrollTo(0, document.body.scrollHeight);
+
+        // Si c'est le message de l'utilisateur, on appelle l'API
+        if (isUser) {
+            showTypingIndicator();
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await response.json();
+                removeTypingIndicator();
+                addMessage(data.response, false);
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage("Désolé, j'ai un petit problème de connexion. Réessaie !", false);
+            }
+        }
+    }
+
+    function showTypingIndicator() {
+        const loader = document.createElement('div');
+        loader.id = 'ai-loader';
+        loader.className = 'message ai-message';
+        loader.innerHTML = '<p>Le coach réfléchit... ⏳</p>';
+        const quickActions = document.querySelector('.quick-actions');
+        chatContainer.insertBefore(loader, quickActions);
+    }
+
+    function removeTypingIndicator() {
+        const loader = document.getElementById('ai-loader');
+        if (loader) loader.remove();
     }
 
     sendBtn.addEventListener('click', () => {
@@ -84,18 +113,18 @@
         if (text) {
             addMessage(text, true);
             chatInput.value = '';
-            
-            // Simulation d'une réponse de l'IA après 1 seconde
-            setTimeout(() => {
-                addMessage("I'm analyzing your request... I'll have a personalized tip for you in a moment! ✨", false);
-            }, 1000);
         }
     });
 
-    // Permettre d'envoyer avec la touche "Entrée"
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendBtn.click();
     });
+    document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const text = btn.innerText;
+        addMessage(text, true); // Cela va envoyer "Yes, set limit" au serveur !
+    });
+});
 </script>
 </body>
 </html>
