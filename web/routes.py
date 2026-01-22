@@ -20,19 +20,20 @@ MOCK_TRANSACTIONS = [
 ]
 
 # --- ROUTE API POUR LE CHAT (GROQ) ---
+chat_history = []
 @router.post("/chat")
 async def chat_with_coach(payload: dict = Body(...)):
     user_msg = payload.get("message")
+    chat_history.append({"role": "user", "content": user_msg})
     
-    # CALCUL RÉEL du score au moment du chat
+    # On ne garde que les 5 derniers messages pour ne pas saturer l'IA
+    recent_history = chat_history[-5:]
+    
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
+    # On passe maintenant l'historique au coach au lieu d'un seul message
+    advice = coach.get_financial_advice(recent_history, analysis["score"], "Netflix, Uber, etc.")
     
-    # On prépare la liste des marchands proprement
-    merchants = ", ".join([t['merchant'] for t in MOCK_TRANSACTIONS])
-    
-    # On passe les VRAIES infos à l'IA
-    advice = coach.get_financial_advice(user_msg, analysis["score"], merchants)
-    
+    chat_history.append({"role": "assistant", "content": advice})
     return {"response": advice}
 
 # --- ROUTES DES PAGES HTML ---
