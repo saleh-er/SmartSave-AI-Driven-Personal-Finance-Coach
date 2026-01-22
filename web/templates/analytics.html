@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSave - Analytics</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="brand-header">
+            <h1>Analytics</h1>
+            <p>Spending patterns & insights</p>
+        </header>
+
+        <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 25px;">
+            <button class="tab active" style="flex: 1; padding: 10px; border-radius: 12px; border: none; background: var(--primary-gradient); color: white; font-weight: 600;">Week</button>
+            <button class="tab" style="flex: 1; padding: 10px; border-radius: 12px; border: none; background: var(--glass-bg); color: white; border: 1px solid var(--glass-border);">Month</button>
+        </div>
+
+        <div class="glass-card" style="text-align: center; padding: 30px 20px; margin-bottom: 25px;">
+            <span style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Total Spending</span>
+            <h2 style="font-size: 2.5rem; margin: 10px 0; font-weight: 800;">€{{ total_spent }}</h2>
+            <p style="color: var(--accent-teal); font-size: 0.85rem; font-weight: 600;">↓ 12% from last month</p>
+        </div>
+
+        <div class="glass-card">
+            <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Top Categories</h3>
+            
+            <div class="categories-container">
+                {% for cat, amount in categories.items() %}
+                <div class="category-item" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600;">{{ cat }}</span>
+                        <span style="font-weight: 800;">€{{ amount }}</span>
+                    </div>
+                    
+                    <div class="progress-track" style="background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
+                        {% set percentage = (amount / total_spent * 100)|int %}
+                        <div class="progress-fill" 
+                             style="width: {{ percentage }}%; 
+                                    height: 100%; 
+                                    background: var(--primary-gradient); 
+                                    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+                                    border-radius: 5px;">
+                        </div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;">{{ percentage }}% of total monthly spend</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <a href="/" class="nav-link">🏠<span>Home</span></a>
+            <a href="/analytics" class="nav-link active">📈<span>Stats</span></a>
+            <a href="/coach" class="nav-link">✨<span>Coach</span></a>
+            <a href="/goals" class="nav-link">🎯<span>Goals</span></a>
+        </nav>
+    </div>
+</body>
+</html>
