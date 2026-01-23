@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSave - AI Coach</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
@@ -19,18 +20,8 @@
 
         <main class="chat-container">
             <div class="message ai-message">
-                <p>Hello Julie! How can I help you improve your financial health today?</p>
+                <p>Hello Saleh! How can I help you improve your financial health today?</p>
                 <span class="time">10:30 AM</span>
-            </div>
-
-            <div class="message user-message">
-                <p>Show me my spending trends</p>
-                <span class="time">10:31 AM</span>
-            </div>
-
-            <div class="message ai-message">
-                <p>I noticed you spend <span class="highlight">20% more on Uber</span> this month. Want to set a limit?</p>
-                <span class="time">10:31 AM</span>
             </div>
 
             <div class="quick-actions">
@@ -47,12 +38,21 @@
         </div>
 
         <nav class="bottom-nav">
-            <a href="/" class="nav-link">🏠<span>Home</span></a>
-            <a href="/analytics" class="nav-link">📈<span>Stats</span></a>
-            <a href="/coach" class="nav-link active">✨<span>Coach</span></a>
-            <a href="/goals" class="nav-link">🎯<span>Goals</span></a>
+            <a href="/" class="nav-link {{ 'active' if request.url.path == '/' }}">
+                <i class="fas fa-home"></i> <span>Home</span>
+            </a>
+            <a href="/analytics" class="nav-link {{ 'active' if request.url.path == '/analytics' }}">
+                <i class="fas fa-chart-line"></i> <span>Stats</span>
+            </a>
+            <a href="/coach" class="nav-link {{ 'active' if request.url.path == '/coach' }}">
+                <i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span>
+            </a>
+            <a href="/goals" class="nav-link {{ 'active' if request.url.path == '/goals' }}">
+                <i class="fas fa-bullseye"></i> <span>Goals</span>
+            </a>
         </nav>
     </div>
+
     <script>
     const sendBtn = document.querySelector('.send-btn');
     const chatInput = document.querySelector('.input-wrapper input');
@@ -73,9 +73,13 @@
         
         const quickActions = document.querySelector('.quick-actions');
         chatContainer.insertBefore(messageDiv, quickActions);
-        window.scrollTo(0, document.body.scrollHeight);
+        
+        // Scroll automatique vers le bas
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+        });
 
-        // Si c'est le message de l'utilisateur, on appelle l'API
         if (isUser) {
             showTypingIndicator();
             try {
@@ -119,12 +123,13 @@
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendBtn.click();
     });
+
     document.querySelectorAll('.action-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const text = btn.innerText;
-        addMessage(text, true); // Cela va envoyer "Yes, set limit" au serveur !
+        btn.addEventListener('click', () => {
+            const text = btn.innerText;
+            addMessage(text, true);
+        });
     });
-});
-</script>
+    </script>
 </body>
 </html>

@@ -43,7 +43,7 @@ async def read_home(request: Request):
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "name": "Julie",
+        "name": "Saleh",
         "score": analysis["score"],
         "status": analysis["status"],
         "remaining": 450.00,

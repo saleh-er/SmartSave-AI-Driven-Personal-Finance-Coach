@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSave - AI Coach</title>
+    <title>SmartSave - Home</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
@@ -41,20 +42,20 @@
         </main>
 
         <nav class="bottom-nav">
-            <a href="/" class="nav-link active">
-                <div class="nav-icon-wrapper">🏠</div>
+            <a href="/" class="nav-link {{ 'active' if request.url.path == '/' or request.url.path == '' }}">
+                <i class="fas fa-home"></i> 
                 <span>Home</span>
             </a>
-            <a href="/analytics" class="nav-link">
-                <div class="nav-icon-wrapper">📈</div>
+            <a href="/analytics" class="nav-link {{ 'active' if request.url.path == '/analytics' }}">
+                <i class="fas fa-chart-line"></i> 
                 <span>Analytics</span>
             </a>
-            <a href="/coach" class="nav-link">
-                <div class="nav-icon-wrapper">✨</div>
-                <span>AI Coach</span>
+            <a href="/coach" class="nav-link {{ 'active' if request.url.path == '/coach' }}">
+                <i class="fas fa-wand-magic-sparkles"></i> 
+                <span>Coach</span>
             </a>
-            <a href="/goals" class="nav-link">
-                <div class="nav-icon-wrapper">🎯</div>
+            <a href="/goals" class="nav-link {{ 'active' if request.url.path == '/goals' }}">
+                <i class="fas fa-bullseye"></i> 
                 <span>Goals</span>
             </a>
         </nav>

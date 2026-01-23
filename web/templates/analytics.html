@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSave - Analytics</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
@@ -27,7 +28,6 @@
 
         <div class="glass-card">
             <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Top Categories</h3>
-            
             <div class="categories-container">
                 {% for cat, amount in categories.items() %}
                 <div class="category-item" style="margin-bottom: 20px;">
@@ -35,7 +35,6 @@
                         <span style="font-weight: 600;">{{ cat }}</span>
                         <span style="font-weight: 800;">€{{ amount }}</span>
                     </div>
-                    
                     <div class="progress-track" style="background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
                         {% set percentage = (amount / total_spent * 100)|int %}
                         <div class="progress-fill" 
@@ -53,10 +52,18 @@
         </div>
 
         <nav class="bottom-nav">
-            <a href="/" class="nav-link">🏠<span>Home</span></a>
-            <a href="/analytics" class="nav-link active">📈<span>Stats</span></a>
-            <a href="/coach" class="nav-link">✨<span>Coach</span></a>
-            <a href="/goals" class="nav-link">🎯<span>Goals</span></a>
+            <a href="/" class="nav-link {{ 'active' if request.url.path == '/' }}">
+                <i class="fas fa-home"></i> <span>Home</span>
+            </a>
+            <a href="/analytics" class="nav-link {{ 'active' if request.url.path == '/analytics' }}">
+                <i class="fas fa-chart-line"></i> <span>Stats</span>
+            </a>
+            <a href="/coach" class="nav-link {{ 'active' if request.url.path == '/coach' }}">
+                <i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span>
+            </a>
+            <a href="/goals" class="nav-link {{ 'active' if request.url.path == '/goals' }}">
+                <i class="fas fa-bullseye"></i> <span>Goals</span>
+            </a>
         </nav>
     </div>
 </body>

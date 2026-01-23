@@ -138,44 +138,69 @@ body {
 }
 
 /* --- NAVIGATION FLOTTANTE --- */
+/* --- NAVIGATION STYLE GÉLULE PREMIUM --- */
 .bottom-nav {
     position: fixed;
     bottom: 25px;
     left: 20px;
     right: 20px;
-    max-width: 360px;
+    max-width: 400px;
     margin: 0 auto;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(20px);
-    border-radius: 30px;
+    background: #0F172A; /* Fond sombre pro */
+    border-radius: 50px;
     display: flex;
-    justify-content: space-around;
-    padding: 10px;
-    border: 1px solid var(--glass-border);
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 1000;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
 }
 
 .nav-link {
-    text-decoration: none;
-    color: #64748B;
-    font-size: 0.7rem;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 10px 15px;
-    border-radius: 20px;
-    transition: all 0.3s ease;
+    justify-content: center;
+    text-decoration: none;
+    color: #64748B; /* Couleur grise pour les inactifs */
+    padding: 12px;
+    border-radius: 40px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1; /* Taille égale par défaut */
 }
 
+/* On retire l'affichage du texte pour les icônes inactives */
+.nav-link span {
+    display: none;
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.nav-link i, .nav-icon-wrapper {
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- L'ÉTAT ACTIF (LA GÉLULE GÉANTE) --- */
 .nav-link.active {
+    flex: 3; /* Elle s'élargit pour prendre la place */
     background: var(--primary-gradient);
     color: white;
-    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+    gap: 12px;
+    padding: 15px 25px;
+    /* La bordure blanche fine et brillante de ton image */
+    border: 2px solid rgba(255, 255, 255, 0.8); 
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
 }
 
-.nav-icon-wrapper {
-    font-size: 1.3rem;
-    margin-bottom: 4px;
+.nav-link.active span {
+    display: inline; /* Le nom apparaît uniquement sur l'onglet actif */
+}
+
+.nav-link.active i, .nav-link.active .nav-icon-wrapper {
+    font-size: 1.6rem; /* Icône plus grande quand active */
 }
 /* --- Coach Specific Styles --- */
 
