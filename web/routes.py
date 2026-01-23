@@ -48,10 +48,45 @@ async def chat_with_coach(payload: dict = Body(...)):
     chat_history.append({"role": "assistant", "content": advice})
     return {"response": advice}
 
+
+@router.post("/calculate-plan")
+async def calculate_plan(payload: dict = Body(...), db: Session = Depends(get_db)):
+    goal_name = payload.get("name")
+    target_amount = float(payload.get("target"))
+    
+    # On récupère les data pour l'IA
+    db_tx = db.query(Transaction).all()
+    tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
+    analysis = SerenityEngine.analyze_finances(tx_list)
+    
+    prompt = [
+        {
+            "role": "system", 
+            "content": "Tu es un coach financier expert. Tu dois créer des plans d'épargne motivants, détaillés et structurés."
+        },
+        {
+            "role": "user", 
+            "content": f"""
+                L'utilisateur veut économiser {target_amount}€ pour son projet : '{goal_name}'.
+                Ses dépenses mensuelles actuelles sont de {analysis['total_spent']}€.
+                
+                Rédige un plan d'action complet qui inclut :
+                1. Une analyse rapide de sa situation.
+                2. Le montant exact à mettre de côté par jour ou par semaine.
+                3. Deux astuces concrètes pour réduire ses dépenses actuelles basées sur ses catégories.
+                4. Une phrase d'encouragement personnalisée.
+                
+                Réponds avec un ton amical et utilise des emojis.
+            """
+        }
+    ]
+    
+    plan_advice = coach.get_financial_advice(prompt, analysis["score"], "Général")
+    return {"plan": plan_advice} # C'est ce 'plan' que le JS attend
+
 @router.post("/add-goal")
 async def add_goal(payload: dict = Body(...), db: Session = Depends(get_db)):
     try:
-        # CORRECTION : Utilisation de Goal au lieu de models.Goal
         new_goal = Goal(
             name=payload.get("name"),
             target=float(payload.get("target")),
