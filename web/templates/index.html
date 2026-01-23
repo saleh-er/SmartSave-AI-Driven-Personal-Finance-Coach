@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="notification-container"></div>
     <div class="app-container">
         <header class="brand-header">
             <h1 class="logo">Smart<span>Save</span></h1>
@@ -60,5 +61,36 @@
             </a>
         </nav>
     </div>
+    <script>
+        function showNotification(message, icon = "fa-bell") {
+    const container = document.getElementById('notification-container');
+    
+    // Création de la notification
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <div class="toast-content">
+            <p>${message}</p>
+        </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Animation d'entrée
+    setTimeout(() => toast.classList.add('show'), 100);
+    
+    // Animation de sortie et suppression après 5 secondes
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 5000);
+}
+
+// SIMULATION : Déclencher une notification après 3 secondes
+setTimeout(() => {
+    showNotification("Saleh, tu as dépensé 25€ chez Uber aujourd'hui. Attention à ton budget !", "fa-triangle-exclamation");
+}, 3000);
+    </script>
 </body>
 </html>

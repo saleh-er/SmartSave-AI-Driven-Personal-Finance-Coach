@@ -331,3 +331,46 @@ body {
     border-radius: 10px;
     cursor: pointer;
 }
+/* --- SYSTÈME DE NOTIFICATIONS --- */
+#notification-container {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* Laisse cliquer à travers si pas de notification */
+}
+
+.toast {
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--primary-gradient);
+    border-radius: 18px;
+    padding: 15px 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform: translateY(-150%); /* Caché par défaut en haut */
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: auto;
+}
+
+.toast.show {
+    transform: translateY(0);
+}
+
+.toast i {
+    font-size: 1.2rem;
+    color: var(--accent-teal);
+}
+
+.toast-content p {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
