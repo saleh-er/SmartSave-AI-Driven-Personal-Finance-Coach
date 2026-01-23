@@ -1,37 +1,47 @@
 import uvicorn
-from fastapi import FastAPI, Request
+import models.models as models_file
+from database import engine, Base
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from contextlib import asynccontextmanager
 from web.routes import router as web_router
 from core.config import settings
 
+# 1. Gestion du cycle de vie (Lifespan) - Remplace on_event("startup")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("=== SmartSave Engine Starting ===")
+    
+    # CRÉATION DES TABLES DANS POSTGRESQL
+    # Cette ligne vérifie tes classes dans models.py et crée les tables dans pgAdmin
+    Base.metadata.create_all(bind=engine)
+    
+    print(f"Environment: {settings.ENV}")
+    print("Database: Connected & Tables Created")
+    print("AI Coach: Ready")
+    yield
+    print("=== SmartSave Engine Shutting Down ===")
+
 def create_app() -> FastAPI:
     """
-    Initialisation de l'application SmartSave avec une architecture modulaire.
+    Initialisation de l'application SmartSave avec PostgreSQL et Lifespan.
     """
     app = FastAPI(
         title="SmartSave API",
         description="L'intelligence artificielle au service de votre sérénité financière.",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan  # On lie le lifespan ici
     )
 
-    # 1. Configuration des fichiers statiques (CSS, JS, Images)
+    # Configuration des fichiers statiques
     app.mount("/static", StaticFiles(directory="web/static"), name="static")
 
-    # 2. Inclusion des routes (Séparation des responsabilités)
-    # Toutes les routes web et API sont définies dans le module web/routes.py
+    # Inclusion des routes
     app.include_router(web_router)
-
-    @app.on_event("startup")
-    async def startup_event():
-        print("=== SmartSave Engine Started ===")
-        print(f"Environment: {settings.ENV}")
-        print("AI Coach: Ready")
 
     return app
 
 app = create_app()
 
 if __name__ == "__main__":
-    # Lancement du serveur avec "Hot Reload" pour le développement
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

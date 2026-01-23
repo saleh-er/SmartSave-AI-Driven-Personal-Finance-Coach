@@ -1,6 +1,24 @@
-from fastapi import APIRouter, Request, Body
+import sys
+import os
+from pathlib import Path
+
+# Fix pour les imports : on ajoute la racine du projet
+root_path = Path(__file__).parent.parent
+if str(root_path) not in sys.path:
+    sys.path.insert(0, str(root_path))
+
+from fastapi import APIRouter, Request, Body, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+
+# On importe les classes directement
+from database import get_db
+try:
+    from models.models import Transaction, Goal
+except ImportError:
+    from models import Transaction, Goal
+
 from services.serenity_engine import SerenityEngine
 from api.open_ai_client import AICoach
 
@@ -8,13 +26,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
 coach = AICoach()
 
-# --- 1. DONNÉES GLOBALES (Mémoire vive du serveur) ---
-
-USER_GOALS = [
-    {"name": "Japan Trip", "current": 1300, "target": 2000, "color": "#6366F1"},
-    {"name": "Emergency Fund", "current": 4500, "target": 5000, "color": "#10B981"}
-]
-
+# --- 1. MOCK DATA ---
 MOCK_TRANSACTIONS = [
     {"id": 1, "merchant": "Netflix", "amount": 15.99, "category": "Subs", "is_essential": False},
     {"id": 2, "merchant": "Carrefour", "amount": 82.50, "category": "Food", "is_essential": True},
@@ -25,97 +37,87 @@ MOCK_TRANSACTIONS = [
 
 chat_history = []
 
-# --- 2. ROUTES API (LOGIQUE & CALCULS) ---
+# --- 2. ROUTES API ---
 
 @router.post("/chat")
 async def chat_with_coach(payload: dict = Body(...)):
     user_msg = payload.get("message")
     chat_history.append({"role": "user", "content": user_msg})
-    
-    recent_history = chat_history[-5:]
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
-    
-    # On passe le score réel à l'IA pour qu'elle sache de quoi elle parle
-    advice = coach.get_financial_advice(recent_history, analysis["score"], "Netflix, Uber, Starbucks, Loyer")
-    
+    advice = coach.get_financial_advice(chat_history[-5:], analysis["score"], "Netflix, Uber, Starbucks, Loyer")
     chat_history.append({"role": "assistant", "content": advice})
     return {"response": advice}
 
 @router.post("/add-goal")
-async def add_goal(payload: dict = Body(...)):
-    new_goal = {
-        "name": payload.get("name"),
-        "target": float(payload.get("target")),
-        "current": 0,
-        "color": payload.get("color", "#6366F1")
-    }
-    USER_GOALS.append(new_goal)
-    return {"status": "success", "goal": new_goal}
-
-@router.post("/calculate-plan")
-async def calculate_plan(payload: dict = Body(...)):
-    goal_name = payload.get("name")
-    target_amount = float(payload.get("target"))
-    
-    analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
-    
-    # Prompt optimisé pour le calcul financier par l'IA
-    prompt = [
-        {"role": "system", "content": "You are a precise financial advisor. Mirror the user's language."},
-        {"role": "user", "content": f"Target: {target_amount}€ for {goal_name}. Current monthly spend: {analysis['total_spent']}€. Create a daily savings plan based on this budget."}
-    ]
-    
-    plan_advice = coach.get_financial_advice(prompt, analysis["score"], "Netflix, Uber, Starbucks")
-    return {"plan": plan_advice}
+async def add_goal(payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        # CORRECTION : Utilisation de Goal au lieu de models.Goal
+        new_goal = Goal(
+            name=payload.get("name"),
+            target=float(payload.get("target")),
+            current=0.0,
+            color=payload.get("color", "#6366F1")
+        )
+        db.add(new_goal)
+        db.commit()
+        db.refresh(new_goal)
+        return {"status": "success", "goal": {"name": new_goal.name, "target": new_goal.target}}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Goal already exists or invalid data")
 
 @router.delete("/delete-goal/{goal_name}")
-async def delete_goal(goal_name: str):
-    global USER_GOALS
-    USER_GOALS = [goal for goal in USER_GOALS if goal["name"] != goal_name]
+async def delete_goal(goal_name: str, db: Session = Depends(get_db)):
+    # CORRECTION : Utilisation de Goal au lieu de models.Goal
+    goal = db.query(Goal).filter(Goal.name == goal_name).first()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    db.delete(goal)
+    db.commit()
     return {"status": "success"}
 
-# --- 3. ROUTES PAGES (RENDU HTML) ---
+# --- 3. ROUTES PAGES ---
 
 @router.get("/", response_class=HTMLResponse)
-async def read_home(request: Request):
-    # C'est ici que le nouveau SerenityEngine fait son vrai travail
-    analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
+async def read_home(request: Request, db: Session = Depends(get_db)):
+    # CORRECTION : Utilisation de Transaction au lieu de models.Transaction
+    db_tx = db.query(Transaction).all()
+    tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
     
-    # --- SYSTÈME D'ALERTES DYNAMIQUES ---
-    dynamic_alert = None
-    if analysis["score"] < 50:
-        dynamic_alert = "Attention Saleh, tes dépenses 'Plaisir' sont trop hautes ce mois-ci ! ⚠️"
-    elif analysis["score"] > 85:
-        dynamic_alert = "Ton score est excellent ! Tu gères tes finances comme un chef. 🏆"
-
-    # On peut aussi calculer le montant restant réel
-    total_spent = sum(t['amount'] for t in MOCK_TRANSACTIONS)
-    remaining = 1500.00 - total_spent # Imaginons un budget de 1500€
+    analysis = SerenityEngine.analyze_finances(tx_to_analyze)
+    remaining = 1500.00 - analysis['total_spent']
 
     return templates.TemplateResponse("index.html", {
         "request": request,
         "name": "Saleh",
         "score": analysis["score"],
         "status": analysis["status"],
-        "remaining":round(remaining,2), # 
-        "transactions": MOCK_TRANSACTIONS[:3],
-        "dynamic_alert": dynamic_alert
+        "remaining": round(remaining, 2),
+        "transactions": tx_to_analyze[:3],
+        "dynamic_alert": None
     })
 
 @router.get("/goals", response_class=HTMLResponse)
-async def read_goals(request: Request):
+async def read_goals(request: Request, db: Session = Depends(get_db)):
+    # CORRECTION : Utilisation de Goal au lieu de models.Goal
+    db_goals = db.query(Goal).all()
     return templates.TemplateResponse("goals.html", {
         "request": request,
-        "goals": USER_GOALS 
+        "goals": db_goals 
     })
 
 @router.get("/analytics", response_class=HTMLResponse)
-async def read_analytics(request: Request):
-    total_spent = sum(t['amount'] for t in MOCK_TRANSACTIONS)
+async def read_analytics(request: Request, db: Session = Depends(get_db)):
+    # CORRECTION : Utilisation de Transaction au lieu de models.Transaction
+    db_tx = db.query(Transaction).all()
+    tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
+    
+    total_spent = sum(t.amount if hasattr(t, 'amount') else t['amount'] for t in tx_list)
     categories_data = {}
-    for t in MOCK_TRANSACTIONS:
-        cat = t['category']
-        categories_data[cat] = categories_data.get(cat, 0) + t['amount']
+    for t in tx_list:
+        cat = t.category if hasattr(t, 'category') else t['category']
+        amt = t.amount if hasattr(t, 'amount') else t['amount']
+        categories_data[cat] = categories_data.get(cat, 0) + amt
         
     return templates.TemplateResponse("analytics.html", {
         "request": request, 
