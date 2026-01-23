@@ -60,23 +60,23 @@ async def calculate_plan(payload: dict = Body(...), db: Session = Depends(get_db
     analysis = SerenityEngine.analyze_finances(tx_list)
     
     prompt = [
-        {
+      {
             "role": "system", 
-            "content": "Tu es un coach financier expert. Tu dois créer des plans d'épargne motivants, détaillés et structurés."
+            "content": "You are an expert financial coach. Provide motivating, detailed, and structured savings plans in English."
         },
         {
             "role": "user", 
             "content": f"""
-                L'utilisateur veut économiser {target_amount}€ pour son projet : '{goal_name}'.
-                Ses dépenses mensuelles actuelles sont de {analysis['total_spent']}€.
+                The user wants to save {target_amount}€ for the project: '{goal_name}'.
+                Current monthly spending: {analysis['total_spent']}€.
                 
-                Rédige un plan d'action complet qui inclut :
-                1. Une analyse rapide de sa situation.
-                2. Le montant exact à mettre de côté par jour ou par semaine.
-                3. Deux astuces concrètes pour réduire ses dépenses actuelles basées sur ses catégories.
-                4. Une phrase d'encouragement personnalisée.
+                Please provide a comprehensive action plan including:
+                1. A quick analysis of their current financial situation.
+                2. The exact amount to save daily and weekly to reach the goal.
+                3. Two concrete tips to reduce spending based on their categories.
+                4. A personalized motivational closing statement.
                 
-                Réponds avec un ton amical et utilise des emojis.
+                Use a friendly tone and include emojis. 🚀
             """
         }
     ]
