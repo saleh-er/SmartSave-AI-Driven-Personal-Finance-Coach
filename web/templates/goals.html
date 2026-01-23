@@ -15,7 +15,7 @@
             <p>Save money for what matters</p>
         </header>
 
-        <main class="goals-container" style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 120px;">
+        <main class="goals-container" style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 150px;">
             
             {% for goal in goals %}
             <div class="glass-card goal-card" style="position: relative; overflow: hidden;">
@@ -51,8 +51,27 @@
             </div>
             {% endfor %}
 
-            <button class="glass-card" style="border: 2px dashed var(--glass-border); background: transparent; color: var(--text-secondary); padding: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
-                <span>+</span> Add New Goal
+            <div id="goal-form" class="glass-card" style="display: none; border: 1px solid var(--accent-teal);">
+                <h3 style="margin-bottom: 15px; font-size: 1.1rem;">New Saving Goal</h3>
+                <input type="text" id="goal-name" placeholder="What are you saving for?" 
+                       style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
+                
+                <input type="number" id="goal-target" placeholder="Target Amount (€)" 
+                       style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
+                
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: var(--text-secondary);">Pick a color:</label>
+                    <input type="color" id="goal-color" value="#10B981" style="border: none; background: none; width: 40px; height: 40px; cursor: pointer;">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="saveGoal()" class="action-btn primary" style="flex: 2;">Create Goal</button>
+                    <button onclick="hideForm()" class="action-btn secondary" style="flex: 1;">Cancel</button>
+                </div>
+            </div>
+
+            <button id="add-btn" onclick="showForm()" class="glass-card" style="border: 2px dashed var(--glass-border); background: transparent; color: var(--text-secondary); padding: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
+                <i class="fas fa-plus"></i> Add New Goal
             </button>
         </main>
 
@@ -71,5 +90,41 @@
             </a>
         </nav>
     </div>
+
+    <script>
+        function showForm() {
+            document.getElementById('goal-form').style.display = 'block';
+            document.getElementById('add-btn').style.display = 'none';
+            document.getElementById('goal-name').focus();
+        }
+
+        function hideForm() {
+            document.getElementById('goal-form').style.display = 'none';
+            document.getElementById('add-btn').style.display = 'flex';
+        }
+
+        async function saveGoal() {
+            const name = document.getElementById('goal-name').value;
+            const target = document.getElementById('goal-target').value;
+            const color = document.getElementById('goal-color').value;
+
+            if (!name || !target) {
+                alert("Please name your goal and set a target!");
+                return;
+            }
+
+            const response = await fetch('/add-goal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, target, color })
+            });
+
+            if (response.ok) {
+                // Petit effet de succès avant de recharger
+                document.getElementById('goal-form').style.borderColor = "#10B981";
+                setTimeout(() => window.location.reload(), 500);
+            }
+        }
+    </script>
 </body>
 </html>

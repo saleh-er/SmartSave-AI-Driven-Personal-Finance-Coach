@@ -2,15 +2,20 @@ from fastapi import APIRouter, Request, Body
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from services.serenity_engine import SerenityEngine
-from api.open_ai_client import AICoach  # On importe ton nouveau client Groq
+from api.open_ai_client import AICoach
 
 router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
-
-# Initialisation du coach
 coach = AICoach()
 
-# Données simulées
+# --- 1. DONNÉES GLOBALES (Mémoire du serveur) ---
+
+# Liste des objectifs qui peut être modifiée par l'utilisateur
+USER_GOALS = [
+    {"name": "Japan Trip", "current": 1300, "target": 2000, "color": "#6366F1"},
+    {"name": "Emergency Fund", "current": 4500, "target": 5000, "color": "#10B981"}
+]
+
 MOCK_TRANSACTIONS = [
     {"id": 1, "merchant": "Netflix", "amount": 15.99, "category": "Subs", "is_essential": False},
     {"id": 2, "merchant": "Carrefour", "amount": 82.50, "category": "Food", "is_essential": True},
@@ -19,65 +24,70 @@ MOCK_TRANSACTIONS = [
     {"id": 5, "merchant": "Starbucks", "amount": 6.50, "category": "Food", "is_essential": False},
 ]
 
-# --- ROUTE API POUR LE CHAT (GROQ) ---
 chat_history = []
+
+# --- 2. ROUTES API (LOGIQUE) ---
+
 @router.post("/chat")
 async def chat_with_coach(payload: dict = Body(...)):
     user_msg = payload.get("message")
     chat_history.append({"role": "user", "content": user_msg})
-    
-    # On ne garde que les 5 derniers messages pour ne pas saturer l'IA
     recent_history = chat_history[-5:]
-    
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
-    # On passe maintenant l'historique au coach au lieu d'un seul message
-    advice = coach.get_financial_advice(recent_history, analysis["score"], "Netflix, Uber, etc.")
-    
+    advice = coach.get_financial_advice(recent_history, analysis["score"], "Netflix, Uber, Starbucks, Loyer")
     chat_history.append({"role": "assistant", "content": advice})
     return {"response": advice}
 
-# --- ROUTES DES PAGES HTML ---
+@router.post("/add-goal")
+async def add_goal(payload: dict = Body(...)):
+    new_goal = {
+        "name": payload.get("name"),
+        "target": float(payload.get("target")),
+        "current": 0,
+        "color": payload.get("color", "#6366F1")
+    }
+    USER_GOALS.append(new_goal)
+    return {"status": "success", "goal": new_goal}
+
+# --- 3. ROUTES PAGES (AFFICHAGE) ---
 
 @router.get("/", response_class=HTMLResponse)
 async def read_home(request: Request):
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
+    dynamic_alert = None
+    uber_total = sum(t['amount'] for t in MOCK_TRANSACTIONS if t['merchant'] == 'Uber')
+    
+    if uber_total > 20:
+        dynamic_alert = f"Attention Saleh, tu as déjà dépensé {uber_total}€ en Uber. 🚕"
+    elif analysis["score"] > 75:
+        dynamic_alert = "Super boulot ! Ton score de sérénité est excellent. ✨"
+
     return templates.TemplateResponse("index.html", {
+        "request": request, "name": "Saleh", "score": analysis["score"], 
+        "status": analysis["status"], "remaining": 450.00, 
+        "transactions": MOCK_TRANSACTIONS[:3], "dynamic_alert": dynamic_alert
+    })
+
+@router.get("/goals", response_class=HTMLResponse)
+async def read_goals(request: Request):
+    # On utilise UNIQUEBLENT la liste USER_GOALS définie en haut
+    return templates.TemplateResponse("goals.html", {
         "request": request,
-        "name": "Saleh",
-        "score": analysis["score"],
-        "status": analysis["status"],
-        "remaining": 450.00,
-        "transactions": MOCK_TRANSACTIONS[:3]
+        "goals": USER_GOALS 
     })
 
 @router.get("/analytics", response_class=HTMLResponse)
 async def read_analytics(request: Request):
     total_spent = sum(t['amount'] for t in MOCK_TRANSACTIONS)
-    categories = {}
+    categories_data = {}
     for t in MOCK_TRANSACTIONS:
-        categories[t['category']] = categories.get(t['category'], 0) + t['amount']
-    
+        cat = t['category']
+        categories_data[cat] = categories_data.get(cat, 0) + t['amount']
     return templates.TemplateResponse("analytics.html", {
-        "request": request,
-        "total_spent": round(total_spent, 2),
-        "categories": categories
+        "request": request, "total_spent": round(total_spent, 2), "categories": categories_data
     })
 
 @router.get("/coach", response_class=HTMLResponse)
 async def read_coach(request: Request):
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
-    return templates.TemplateResponse("coach.html", {
-        "request": request,
-        "analysis": analysis
-    })
-
-@router.get("/goals", response_class=HTMLResponse)
-async def read_goals(request: Request):
-    user_goals = [
-        {"name": "Japan Trip", "current": 1300, "target": 2000, "color": "#6366F1"},
-        {"name": "Emergency Fund", "current": 4500, "target": 5000, "color": "#10B981"}
-    ]
-    return templates.TemplateResponse("goals.html", {
-        "request": request,
-        "goals": user_goals
-    })
+    return templates.TemplateResponse("coach.html", {"request": request, "analysis": analysis})

@@ -62,35 +62,37 @@
         </nav>
     </div>
     <script>
-        function showNotification(message, icon = "fa-bell") {
-    const container = document.getElementById('notification-container');
-    
-    // Création de la notification
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `
-        <i class="fas ${icon}"></i>
-        <div class="toast-content">
-            <p>${message}</p>
-        </div>
-    `;
-    
-    container.appendChild(toast);
-    
-    // Animation d'entrée
-    setTimeout(() => toast.classList.add('show'), 100);
-    
-    // Animation de sortie et suppression après 5 secondes
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 500);
-    }, 5000);
-}
+    function showNotification(message, icon = "fa-bell") {
+        const container = document.getElementById('notification-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+            <i class="fas ${icon}"></i>
+            <div class="toast-content">
+                <p>${message}</p>
+            </div>
+        `;
+        container.appendChild(toast);
 
-// SIMULATION : Déclencher une notification après 3 secondes
-setTimeout(() => {
-    showNotification("Saleh, tu as dépensé 25€ chez Uber aujourd'hui. Attention à ton budget !", "fa-triangle-exclamation");
-}, 3000);
+        setTimeout(() => toast.classList.add('show'), 100);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 500);
+        }, 6000); // On laisse 6 secondes pour avoir le temps de lire
+    }
+
+    window.onload = () => {
+        // On récupère la variable envoyée par Python
+        // Le filtre |safe est important pour éviter les problèmes de caractères
+        const alertMsg = "{{ dynamic_alert if dynamic_alert else '' }}";
+        
+        if (alertMsg && alertMsg !== "None" && alertMsg !== "") {
+            setTimeout(() => {
+                showNotification(alertMsg, "fa-robot");
+            }, 2000);
+        }
+    };
     </script>
 </body>
 </html>
