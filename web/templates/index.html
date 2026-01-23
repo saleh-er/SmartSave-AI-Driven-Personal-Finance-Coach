@@ -7,6 +7,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Animation de pulsation pour les scores faibles */
+        @keyframes pulse-danger {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .pulse-active {
+            animation: pulse-danger 2s infinite;
+        }
+        .ai-feed {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .ai-feed:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-teal);
+        }
+    </style>
 </head>
 <body>
     <div id="notification-container"></div>
@@ -18,9 +37,9 @@
 
         <main>
             <div class="score-container">
-                <div class="serenity-ring">
+                <div class="serenity-ring" id="serenityRing">
                     <div class="score-content">
-                        <span class="score-number">{{ score|int if score else 0 }}</span>
+                        <span class="score-number" id="scoreValue">{{ score|int if score else 0 }}</span>
                         <span class="score-text">Serenity Score</span>
                     </div>
                 </div>
@@ -31,13 +50,13 @@
                 <h2 class="balance-amount">€450.00</h2>
             </div>
 
-            <div class="glass-card ai-feed">
+            <div class="glass-card ai-feed" onclick="window.location.href='/coach'">
                 <div class="ai-header">
                     <span class="ai-icon">✨</span>
                     <span class="ai-title">AI Feed</span>
                 </div>
                 <div class="ai-message">
-                    <p>Hello {{ name }}! I found <span class="highlight">15€ savings</span> on your subscriptions.</p>
+                    <p id="aiDynamicText">Analyzing your finances...</p>
                 </div>
             </div>
         </main>
@@ -61,6 +80,7 @@
             </a>
         </nav>
     </div>
+
     <script>
     function showNotification(message, icon = "fa-bell") {
         const container = document.getElementById('notification-container');
@@ -79,18 +99,33 @@
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 500);
-        }, 6000); // On laisse 6 secondes pour avoir le temps de lire
+        }, 6000);
     }
 
     window.onload = () => {
-        // On récupère la variable envoyée par Python
-        // Le filtre |safe est important pour éviter les problèmes de caractères
-        const alertMsg = "{{ dynamic_alert if dynamic_alert else '' }}";
+        const score = parseInt(document.getElementById('scoreValue').innerText);
+        const ring = document.getElementById('serenityRing');
+        const aiText = document.getElementById('aiDynamicText');
         
+        // 1. Gestion dynamique de la couleur et des effets du cercle
+        if (score >= 80) {
+            ring.style.borderColor = "#10B981"; // Vert
+            aiText.innerHTML = "Everything looks great, Saleh! Your savings are on track. 🚀";
+        } else if (score >= 50) {
+            ring.style.borderColor = "#F59E0B"; // Orange
+            aiText.innerHTML = "You're doing okay, but watch those <span class='highlight'>non-essential</span> expenses.";
+        } else {
+            ring.style.borderColor = "#EF4444"; // Rouge
+            ring.classList.add('pulse-active'); // Active la pulsation
+            aiText.innerHTML = "Warning: High spending detected! Click here to chat with me. ⚠️";
+        }
+
+        // 2. Notification IA envoyée par Python
+        const alertMsg = "{{ dynamic_alert if dynamic_alert else '' }}";
         if (alertMsg && alertMsg !== "None" && alertMsg !== "") {
             setTimeout(() => {
                 showNotification(alertMsg, "fa-robot");
-            }, 2000);
+            }, 1500);
         }
     };
     </script>
