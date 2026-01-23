@@ -108,3 +108,9 @@ async def calculate_plan(payload: dict = Body(...)):
     
     plan_advice = coach.get_financial_advice(prompt, analysis["score"], "Netflix, Uber, Starbucks")
     return {"plan": plan_advice}
+
+@router.delete("/delete-goal/{goal_name}")
+async def delete_goal(goal_name: str):
+    global USER_GOALS
+    USER_GOALS = [goal for goal in USER_GOALS if goal["name"] != goal_name]
+    return {"status": "success"}

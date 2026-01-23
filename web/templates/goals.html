@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSave - Goals</title>
@@ -20,20 +21,27 @@
             {% for goal in goals %}
             <div class="glass-card goal-card" style="position: relative; overflow: hidden;">
                 <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: {{ goal.color }};"></div>
+                
                 <div style="padding-left: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                         <div>
                             <h3 style="margin: 0; font-size: 1.2rem;">{{ goal.name }}</h3>
                             <span style="font-size: 0.8rem; color: var(--text-secondary);">Target: €{{ goal.target }}</span>
                         </div>
-                        <div style="text-align: right;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                            <i class="fas fa-trash" onclick="deleteGoal('{{ goal.name }}')" 
+                               style="color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; transition: 0.3s;"
+                               onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'"></i>
+                            
                             {% set percent = (goal.current / goal.target * 100)|int %}
                             <span style="font-size: 1.3rem; font-weight: 800; color: {{ goal.color }};">{{ percent }}%</span>
                         </div>
                     </div>
+
                     <div class="progress-track" style="background: rgba(255,255,255,0.1); height: 12px; border-radius: 6px; margin-bottom: 10px;">
                         <div class="progress-fill" style="width: {{ percent }}%; height: 100%; background: {{ goal.color }}; border-radius: 6px; box-shadow: 0 0 15px {{ goal.color }}66;"></div>
                     </div>
+
                     <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
                         <span style="font-weight: 600;">€{{ goal.current }} saved</span>
                         <span style="color: var(--text-secondary);">€{{ goal.target - goal.current }} left</span>
@@ -101,7 +109,7 @@
         function hideForm() {
             document.getElementById('goal-form').style.display = 'none';
             document.getElementById('add-btn').style.display = 'flex';
-            document.getElementById('ai-plan-result').style.display = 'none'; // On cache le plan aussi
+            document.getElementById('ai-plan-result').style.display = 'none';
         }
 
         async function saveGoal() {
@@ -120,6 +128,22 @@
                 body: JSON.stringify({ name, target, color })
             });
 
+            if (response.ok) {
+                // 🎉 EFFET CONFETTIS
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: [color, '#ffffff', '#10B981']
+                });
+                // On recharge après l'animation
+                setTimeout(() => window.location.reload(), 1200);
+            }
+        }
+
+        async function deleteGoal(name) {
+            if (!confirm(`Delete "${name}"?`)) return;
+            const response = await fetch(`/delete-goal/${name}`, { method: 'DELETE' });
             if (response.ok) {
                 window.location.reload();
             }
