@@ -25,6 +25,51 @@
             transform: translateY(-3px);
             border-color: var(--accent-teal);
         }
+
+        /* Styles pour le nouveau formulaire de transaction */
+        .transaction-form {
+            margin-top: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+        .transaction-form input, .transaction-form select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            flex: 1;
+            outline: none;
+        }
+        .transaction-form input:focus {
+            border-color: var(--accent-blue);
+        }
+        .btn-add-tx {
+            background: linear-gradient(135deg, #6366F1, #a855f7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-add-tx:hover {
+            opacity: 0.9;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -47,7 +92,29 @@
 
             <div class="glass-card balance-card">
                 <span class="card-label">Remaining to spend</span>
-                <h2 class="balance-amount">€450.00</h2>
+                <h2 class="balance-amount">€{{ remaining }}</h2>
+            </div>
+
+            <div class="glass-card transaction-form">
+                <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Quick Add Expense 💸</h3>
+                <div class="form-row">
+                    <input type="text" id="tx-merchant" placeholder="Store/Merchant">
+                    <input type="number" id="tx-amount" placeholder="Amount (€)">
+                </div>
+                <div class="form-row">
+                    <select id="tx-category">
+                        <option value="Food">Food 🍔</option>
+                        <option value="Transport">Transport 🚗</option>
+                        <option value="Housing">Housing 🏠</option>
+                        <option value="Subs">Subscriptions 📺</option>
+                        <option value="Fun">Entertainment ✨</option>
+                    </select>
+                    <button onclick="submitTransaction()" class="btn-add-tx">Add</button>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="tx-essential" checked>
+                    <label for="tx-essential">Is this an essential expense?</label>
+                </div>
             </div>
 
             <div class="glass-card ai-feed" onclick="window.location.href='/coach'">
@@ -82,6 +149,38 @@
     </div>
 
     <script>
+    // --- FONCTION POUR ENVOYER LA TRANSACTION ---
+    function submitTransaction() {
+        const data = {
+            merchant: document.getElementById('tx-merchant').value,
+            amount: document.getElementById('tx-amount').value,
+            category: document.getElementById('tx-category').value,
+            is_essential: document.getElementById('tx-essential').checked
+        };
+
+        if (!data.merchant || !data.amount) {
+            showNotification("Please fill in all fields!", "fa-exclamation-triangle");
+            return;
+        }
+
+        fetch('/add-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === "success") {
+                showNotification("Expense added!", "fa-check-circle");
+                setTimeout(() => location.reload(), 800);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification("Error saving transaction", "fa-xmark");
+        });
+    }
+
     function showNotification(message, icon = "fa-bell") {
         const container = document.getElementById('notification-container');
         const toast = document.createElement('div');
@@ -93,9 +192,7 @@
             </div>
         `;
         container.appendChild(toast);
-
         setTimeout(() => toast.classList.add('show'), 100);
-
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 500);
@@ -107,20 +204,18 @@
         const ring = document.getElementById('serenityRing');
         const aiText = document.getElementById('aiDynamicText');
         
-        // 1. Gestion dynamique de la couleur et des effets du cercle
         if (score >= 80) {
-            ring.style.borderColor = "#10B981"; // Vert
+            ring.style.borderColor = "#10B981";
             aiText.innerHTML = "Everything looks great, Saleh! Your savings are on track. 🚀";
         } else if (score >= 50) {
-            ring.style.borderColor = "#F59E0B"; // Orange
+            ring.style.borderColor = "#F59E0B";
             aiText.innerHTML = "You're doing okay, but watch those <span class='highlight'>non-essential</span> expenses.";
         } else {
-            ring.style.borderColor = "#EF4444"; // Rouge
-            ring.classList.add('pulse-active'); // Active la pulsation
+            ring.style.borderColor = "#EF4444";
+            ring.classList.add('pulse-active');
             aiText.innerHTML = "Warning: High spending detected! Click here to chat with me. ⚠️";
         }
 
-        // 2. Notification IA envoyée par Python
         const alertMsg = "{{ dynamic_alert if dynamic_alert else '' }}";
         if (alertMsg && alertMsg !== "None" && alertMsg !== "") {
             setTimeout(() => {

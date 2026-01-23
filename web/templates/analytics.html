@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -26,7 +27,14 @@
             <p style="color: var(--accent-teal); font-size: 0.85rem; font-weight: 600;">↓ 12% from last month</p>
         </div>
 
-        <div class="glass-card">
+        <div class="glass-card" style="margin-bottom: 25px;">
+            <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Visual Breakdown</h3>
+            <div style="max-width: 250px; margin: 0 auto;">
+                <canvas id="spendingChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 80px;">
             <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Top Categories</h3>
             <div class="categories-container">
                 {% for cat, amount in categories.items() %}
@@ -36,7 +44,7 @@
                         <span style="font-weight: 800;">€{{ amount }}</span>
                     </div>
                     <div class="progress-track" style="background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
-                        {% set percentage = (amount / total_spent * 100)|int %}
+                        {% set percentage = ((amount / total_spent * 100)|int) if total_spent > 0 else 0 %}
                         <div class="progress-fill" 
                              style="width: {{ percentage }}%; 
                                     height: 100%; 
@@ -66,5 +74,43 @@
             </a>
         </nav>
     </div>
+
+    <script>
+        // Initialisation du graphique avec les données de FastAPI
+        const ctx = document.getElementById('spendingChart').getContext('2d');
+        
+        // On récupère les données passées par Jinja2
+        const labels = {{ categories.keys()|list|tojson }};
+        const values = {{ categories.values()|list|tojson }};
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Spending',
+                    data: values,
+                    backgroundColor: [
+                        '#6366F1', // Indigo
+                        '#10B981', // Emerald
+                        '#F59E0B', // Amber
+                        '#EF4444', // Red
+                        '#8B5CF6', // Purple
+                        '#06B6D4'  // Cyan
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false // On cache la légende car tu as déjà tes barres de progression en bas
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

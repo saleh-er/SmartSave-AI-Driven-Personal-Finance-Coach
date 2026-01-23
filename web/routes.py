@@ -157,7 +157,8 @@ async def read_analytics(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("analytics.html", {
         "request": request, 
         "total_spent": round(total_spent, 2), 
-        "categories": categories_data
+        "labels": list(categories_data.keys()),
+        "values": list(categories_data.values())
     })
 
 @router.get("/coach", response_class=HTMLResponse)
@@ -167,3 +168,20 @@ async def read_coach(request: Request):
         "request": request, 
         "analysis": analysis
     })
+@router.post("/add-transaction")
+async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        new_tx = Transaction(
+            merchant=payload.get("merchant"),
+            amount=float(payload.get("amount")),
+            category=payload.get("category"),
+            is_essential=payload.get("is_essential", False),
+            # La date sera ajoutée automatiquement par le modèle (datetime.utcnow)
+        )
+        db.add(new_tx)
+        db.commit()
+        db.refresh(new_tx)
+        return {"status": "success", "transaction": new_tx.merchant}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error adding transaction: {str(e)}")
