@@ -1,6 +1,7 @@
 import sys
 import os
 from pathlib import Path
+from datetime import datetime, timedelta
 
 # Fix pour les imports : on ajoute la racine du projet
 root_path = Path(__file__).parent.parent
@@ -142,7 +143,10 @@ async def read_goals(request: Request, db: Session = Depends(get_db)):
     })
 
 @router.get("/analytics", response_class=HTMLResponse)
-async def read_analytics(request: Request, db: Session = Depends(get_db)):
+async def read_analytics(request: Request, period: str = "week", db: Session = Depends(get_db)):
+    #on definit la periode
+    days = 7 if period == "week" else 30
+    limit_date = datetime.utcnow() - timedelta(days=days)
     db_tx = db.query(Transaction).all()
     tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
     
@@ -161,7 +165,8 @@ async def read_analytics(request: Request, db: Session = Depends(get_db)):
         "total_spent": round(total_spent, 2), 
         "categories": categories_dict,  # Indispensable pour tes barres de progression
         "labels": list(categories_dict.keys()), # Pour le graphique
-        "values": list(categories_dict.values()) # Pour le graphique
+        "values": list(categories_dict.values()), # Pour le graphique
+        "period": period
     })
 
 @router.get("/coach", response_class=HTMLResponse)
