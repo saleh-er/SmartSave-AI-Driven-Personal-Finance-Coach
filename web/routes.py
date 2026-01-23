@@ -143,22 +143,25 @@ async def read_goals(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/analytics", response_class=HTMLResponse)
 async def read_analytics(request: Request, db: Session = Depends(get_db)):
-    # CORRECTION : Utilisation de Transaction au lieu de models.Transaction
     db_tx = db.query(Transaction).all()
     tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
     
     total_spent = sum(t.amount if hasattr(t, 'amount') else t['amount'] for t in tx_list)
-    categories_data = {}
+    
+    # On crée le dictionnaire des catégories
+    categories_dict = {}
     for t in tx_list:
         cat = t.category if hasattr(t, 'category') else t['category']
         amt = t.amount if hasattr(t, 'amount') else t['amount']
-        categories_data[cat] = categories_data.get(cat, 0) + amt
-        
+        categories_dict[cat] = categories_dict.get(cat, 0) + amt
+    
+    # On envoie TOUT au template
     return templates.TemplateResponse("analytics.html", {
         "request": request, 
         "total_spent": round(total_spent, 2), 
-        "labels": list(categories_data.keys()),
-        "values": list(categories_data.values())
+        "categories": categories_dict,  # Indispensable pour tes barres de progression
+        "labels": list(categories_dict.keys()), # Pour le graphique
+        "values": list(categories_dict.values()) # Pour le graphique
     })
 
 @router.get("/coach", response_class=HTMLResponse)
