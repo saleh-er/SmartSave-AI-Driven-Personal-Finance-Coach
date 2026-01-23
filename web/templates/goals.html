@@ -9,6 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="ai-plan-result" style="display:none; margin: 15px 0; padding: 12px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; font-size: 0.85rem; border: 1px dashed var(--accent-teal);">
+    <i class="fas fa-robot"></i> <span id="plan-text">Calculating...</span>
+</div>
+
+<button onclick="getAIPlan()" class="action-btn secondary" style="width: 100%; margin-bottom: 10px;">
+    <i class="fas fa-magic"></i> Suggest Savings Plan
+</button>
     <div class="app-container">
         <header class="brand-header">
             <h1>Your Goals</h1>
@@ -125,6 +132,26 @@
                 setTimeout(() => window.location.reload(), 500);
             }
         }
+        async function getAIPlan() {
+    const name = document.getElementById('goal-name').value;
+    const target = document.getElementById('goal-target').value;
+    const planDiv = document.getElementById('ai-plan-result');
+    const planText = document.getElementById('plan-text');
+
+    if (!name || !target) return alert("Enter a name and amount first!");
+
+    planDiv.style.display = 'block';
+    planText.innerText = "Coach is calculating your plan...";
+
+    const response = await fetch('/calculate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, target })
+    });
+
+    const data = await response.json();
+    planText.innerText = data.plan;
+}
     </script>
 </body>
 </html>

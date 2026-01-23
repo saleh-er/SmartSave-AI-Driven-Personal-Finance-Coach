@@ -91,3 +91,20 @@ async def read_analytics(request: Request):
 async def read_coach(request: Request):
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
     return templates.TemplateResponse("coach.html", {"request": request, "analysis": analysis})
+
+@router.post("/calculate-plan")
+async def calculate_plan(payload: dict = Body(...)):
+    goal_name = payload.get("name")
+    target_amount = float(payload.get("target"))
+    
+    # On récupère l'analyse actuelle pour que l'IA connaisse le budget de Saleh
+    analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
+    
+    # Prompt spécifique pour le plan d'épargne
+    prompt = [
+        {"role": "system", "content": "You are a financial math expert. Calculate a daily saving plan."},
+        {"role": "user", "content": f"I want to save {target_amount}€ for '{goal_name}'. My current monthly spending is {analysis['total_spent']}€. Based on this, suggest how many days it will take and how much I should save per day. Be very concise."}
+    ]
+    
+    plan_advice = coach.get_financial_advice(prompt, analysis["score"], "Netflix, Uber, Starbucks")
+    return {"plan": plan_advice}
