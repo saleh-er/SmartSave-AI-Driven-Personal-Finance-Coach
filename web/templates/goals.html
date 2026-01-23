@@ -9,13 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="ai-plan-result" style="display:none; margin: 15px 0; padding: 12px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; font-size: 0.85rem; border: 1px dashed var(--accent-teal);">
-    <i class="fas fa-robot"></i> <span id="plan-text">Calculating...</span>
-</div>
-
-<button onclick="getAIPlan()" class="action-btn secondary" style="width: 100%; margin-bottom: 10px;">
-    <i class="fas fa-magic"></i> Suggest Savings Plan
-</button>
     <div class="app-container">
         <header class="brand-header">
             <h1>Your Goals</h1>
@@ -27,7 +20,6 @@
             {% for goal in goals %}
             <div class="glass-card goal-card" style="position: relative; overflow: hidden;">
                 <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: {{ goal.color }};"></div>
-                
                 <div style="padding-left: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <div>
@@ -39,17 +31,9 @@
                             <span style="font-size: 1.3rem; font-weight: 800; color: {{ goal.color }};">{{ percent }}%</span>
                         </div>
                     </div>
-
                     <div class="progress-track" style="background: rgba(255,255,255,0.1); height: 12px; border-radius: 6px; margin-bottom: 10px;">
-                        <div class="progress-fill" 
-                             style="width: {{ percent }}%; 
-                                    height: 100%; 
-                                    background: {{ goal.color }}; 
-                                    border-radius: 6px;
-                                    box-shadow: 0 0 15px {{ goal.color }}66;">
-                        </div>
+                        <div class="progress-fill" style="width: {{ percent }}%; height: 100%; background: {{ goal.color }}; border-radius: 6px; box-shadow: 0 0 15px {{ goal.color }}66;"></div>
                     </div>
-
                     <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
                         <span style="font-weight: 600;">€{{ goal.current }} saved</span>
                         <span style="color: var(--text-secondary);">€{{ goal.target - goal.current }} left</span>
@@ -60,14 +44,23 @@
 
             <div id="goal-form" class="glass-card" style="display: none; border: 1px solid var(--accent-teal);">
                 <h3 style="margin-bottom: 15px; font-size: 1.1rem;">New Saving Goal</h3>
+                
                 <input type="text" id="goal-name" placeholder="What are you saving for?" 
                        style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
                 
                 <input type="number" id="goal-target" placeholder="Target Amount (€)" 
                        style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
                 
+                <div id="ai-plan-result" style="display:none; margin: 15px 0; padding: 12px; background: rgba(99, 102, 241, 0.15); border-radius: 12px; font-size: 0.85rem; border: 1px dashed var(--accent-teal); color: white;">
+                    <i class="fas fa-robot" style="color: var(--accent-teal);"></i> <span id="plan-text">Calculating...</span>
+                </div>
+
+                <button onclick="getAIPlan()" class="action-btn secondary" style="width: 100%; margin-bottom: 15px; background: rgba(16, 185, 129, 0.1); color: var(--accent-teal); border: 1px solid var(--accent-teal);">
+                    <i class="fas fa-magic"></i> Suggest Savings Plan
+                </button>
+
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary);">Pick a color:</label>
+                    <label style="font-size: 0.85rem; color: var(--text-secondary);">Color:</label>
                     <input type="color" id="goal-color" value="#10B981" style="border: none; background: none; width: 40px; height: 40px; cursor: pointer;">
                 </div>
 
@@ -108,6 +101,7 @@
         function hideForm() {
             document.getElementById('goal-form').style.display = 'none';
             document.getElementById('add-btn').style.display = 'flex';
+            document.getElementById('ai-plan-result').style.display = 'none'; // On cache le plan aussi
         }
 
         async function saveGoal() {
@@ -127,31 +121,33 @@
             });
 
             if (response.ok) {
-                // Petit effet de succès avant de recharger
-                document.getElementById('goal-form').style.borderColor = "#10B981";
-                setTimeout(() => window.location.reload(), 500);
+                window.location.reload();
             }
         }
+
         async function getAIPlan() {
-    const name = document.getElementById('goal-name').value;
-    const target = document.getElementById('goal-target').value;
-    const planDiv = document.getElementById('ai-plan-result');
-    const planText = document.getElementById('plan-text');
+            const name = document.getElementById('goal-name').value;
+            const target = document.getElementById('goal-target').value;
+            const planDiv = document.getElementById('ai-plan-result');
+            const planText = document.getElementById('plan-text');
 
-    if (!name || !target) return alert("Enter a name and amount first!");
+            if (!name || !target) return alert("Enter a name and amount first!");
 
-    planDiv.style.display = 'block';
-    planText.innerText = "Coach is calculating your plan...";
+            planDiv.style.display = 'block';
+            planText.innerText = "Coach is calculating your plan... ⏳";
 
-    const response = await fetch('/calculate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, target })
-    });
-
-    const data = await response.json();
-    planText.innerText = data.plan;
-}
+            try {
+                const response = await fetch('/calculate-plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, target })
+                });
+                const data = await response.json();
+                planText.innerText = data.plan;
+            } catch (e) {
+                planText.innerText = "Error contacting the coach.";
+            }
+        }
     </script>
 </body>
 </html>
