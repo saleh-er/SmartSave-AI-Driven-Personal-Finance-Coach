@@ -227,9 +227,10 @@ async def add_savings(goal_id: int, payload: dict = Body(...), db: Session = Dep
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Error updating savings")
+
+
+
 # Route pour la page des objectifs
-
-
 @router.get("/goals", response_class=HTMLResponse)
 async def read_goals(request: Request, db: Session = Depends(get_db)):
     # CORRECTION : Utilisation de Goal au lieu de models.Goal
@@ -239,30 +240,43 @@ async def read_goals(request: Request, db: Session = Depends(get_db)):
         "goals": db_goals 
     })
 
+# Route pour la page des analyses
+
 @router.get("/analytics", response_class=HTMLResponse)
 async def read_analytics(request: Request, period: str = "week", db: Session = Depends(get_db)):
-    #on definit la periode
-    days = 7 if period == "week" else 30
-    limit_date = datetime.utcnow() - timedelta(days=days)
-    db_tx = db.query(Transaction).all()
+    days_to_count = 7 if period == "week" else 30
+    limit_date = datetime.utcnow() - timedelta(days=days_to_count)
+    
+    # On récupère les transactions réelles ou Mock
+    db_tx = db.query(Transaction).filter(Transaction.date >= limit_date).all()
     tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
     
-    total_spent = sum(t.amount if hasattr(t, 'amount') else t['amount'] for t in tx_list)
-    
-    # On crée le dictionnaire des catégories
-    categories_dict = {}
-    for t in tx_list:
-        cat = t.category if hasattr(t, 'category') else t['category']
-        amt = t.amount if hasattr(t, 'amount') else t['amount']
-        categories_dict[cat] = categories_dict.get(cat, 0) + amt
-    
-    # On envoie TOUT au template
+    if period == "week":
+        # Labels jours de la semaine
+        labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        values = [0] * 7
+        for t in tx_list:
+            # weekday() renvoie 0 pour Lundi, 6 pour Dimanche
+            dt = t.date if hasattr(t, 'date') else datetime.utcnow()
+            values[dt.weekday()] += float(t.amount if hasattr(t, 'amount') else t['amount'])
+    else:
+        # Labels par semaines du mois
+        labels = ["Week 1", "Week 2", "Week 3", "Week 4"]
+        values = [0] * 4
+        for t in tx_list:
+            dt = t.date if hasattr(t, 'date') else datetime.utcnow()
+            # On calcule dans quelle semaine (0 à 3) tombe la transaction
+            day_age = (datetime.utcnow() - dt).days
+            week_idx = min(day_age // 7, 3) 
+            values[3 - week_idx] += float(t.amount if hasattr(t, 'amount') else t['amount'])
+
+    total_spent = sum(values)
+
     return templates.TemplateResponse("analytics.html", {
         "request": request, 
         "total_spent": round(total_spent, 2), 
-        "categories": categories_dict,  # Indispensable pour tes barres de progression
-        "labels": list(categories_dict.keys()), # Pour le graphique
-        "values": list(categories_dict.values()), # Pour le graphique
+        "labels": labels, 
+        "values": values,
         "period": period
     })
 

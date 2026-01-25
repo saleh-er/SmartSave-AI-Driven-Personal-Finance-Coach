@@ -19,97 +19,100 @@
         <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 25px;">
             <button onclick="location.href='/analytics?period=week'" 
                     class="tab" 
-                    style="flex: 1; padding: 10px; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
+                    style="flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
                     background: {{ 'var(--primary-gradient)' if period == 'week' else 'var(--glass-bg)' }}; 
                     color: white; font-weight: 600; border: 1px solid {{ 'transparent' if period == 'week' else 'var(--glass-border)' }};">
                 Week
             </button>
             <button onclick="location.href='/analytics?period=month'" 
                     class="tab" 
-                    style="flex: 1; padding: 10px; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
+                    style="flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
                     background: {{ 'var(--primary-gradient)' if period == 'month' else 'var(--glass-bg)' }}; 
                     color: white; font-weight: 600; border: 1px solid {{ 'transparent' if period == 'month' else 'var(--glass-border)' }};">
                 Month
             </button>
         </div>
 
-        <div class="glass-card" style="text-align: center; padding: 30px 20px; margin-bottom: 25px;">
-            <span style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Total Spending</span>
-            <h2 style="font-size: 2.5rem; margin: 10px 0; font-weight: 800;">€{{ total_spent }}</h2>
-            <p style="color: var(--accent-teal); font-size: 0.85rem; font-weight: 600;">{{ 'Current Week' if period == 'week' else 'Current Month' }} Analysis</p>
-        </div>
-
-        <div class="glass-card" style="margin-bottom: 25px;">
-            <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Visual Breakdown</h3>
-            <div style="max-width: 250px; margin: 0 auto;">
+        <div class="glass-card" style="padding: 25px; margin-bottom: 25px;">
+            <span style="color: var(--text-secondary); font-size: 0.9rem; letter-spacing: 0.5px;">Total Spending</span>
+            <h2 style="font-size: 2.2rem; margin: 10px 0; font-weight: 800;">€{{ total_spent }}</h2>
+            
+            <div style="height: 250px; margin-top: 20px;">
                 <canvas id="spendingChart"></canvas>
             </div>
         </div>
 
-        <div class="glass-card" style="margin-bottom: 80px;">
+        <div class="glass-card" style="margin-bottom: 100px;">
             <h3 style="margin-bottom: 20px; font-size: 1.1rem;">Top Categories</h3>
             <div class="categories-container">
-                {% for cat, amount in categories.items() %}
-                <div class="category-item" style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-weight: 600;">{{ cat }}</span>
-                        <span style="font-weight: 800;">€{{ amount }}</span>
+                {% if labels and values %}
+                    {% for i in range(labels|length) %}
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-weight: 600; color: #94a3b8;">{{ labels[i] }}</span>
+                        <span style="font-weight: 800; color: white;">€{{ values[i] }}</span>
                     </div>
-                    <div class="progress-track" style="background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
-                        {% set percentage = ((amount / total_spent * 100)|int) if total_spent > 0 else 0 %}
-                        <div class="progress-fill" 
-                             style="width: {{ percentage }}%; 
-                                    height: 100%; 
-                                    background: var(--primary-gradient); 
-                                    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-                                    border-radius: 5px;">
-                        </div>
-                    </div>
-                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;">{{ percentage }}% of total spend</p>
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">
+                        No data available for the current {{ period }}.
+                    </p>
+                {% endif %}
             </div>
         </div>
 
         <nav class="bottom-nav">
-            <a href="/" class="nav-link">
-                <i class="fas fa-home"></i> <span>Home</span>
-            </a>
-            <a href="/analytics" class="nav-link active">
-                <i class="fas fa-chart-line"></i> <span>Stats</span>
-            </a>
-            <a href="/coach" class="nav-link">
-                <i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span>
-            </a>
-            <a href="/goals" class="nav-link">
-                <i class="fas fa-bullseye"></i> <span>Goals</span>
-            </a>
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> <span>Home</span></a>
+            <a href="/analytics" class="nav-link active"><i class="fas fa-chart-line"></i> <span>Stats</span></a>
+            <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span></a>
+            <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i> <span>Goals</span></a>
         </nav>
     </div>
 
     <script>
         const ctx = document.getElementById('spendingChart').getContext('2d');
-        const labels = {{ categories.keys()|list|tojson }};
-        const values = {{ categories.values()|list|tojson }};
+        
+        // Dégradé vertical (Violet -> Vert) pour les barres
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, '#6366F1'); 
+        gradient.addColorStop(1, '#10B981'); 
 
         new Chart(ctx, {
-            type: 'doughnut',
+            type: 'bar',
             data: {
-                labels: labels,
+                labels: {{ labels|tojson }},
                 datasets: [{
                     label: 'Spending',
-                    data: values,
-                    backgroundColor: [
-                        '#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'
-                    ],
-                    borderWidth: 0,
-                    hoverOffset: 15
+                    data: {{ values|tojson }},
+                    backgroundColor: gradient,
+                    borderRadius: 8,
+                    borderSkipped: false,
                 }]
             },
             options: {
-                cutout: '70%',
+                responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { 
+                            color: 'rgba(255, 255, 255, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: { 
+                            color: '#94a3b8',
+                            font: { size: 10 }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { 
+                            color: '#94a3b8',
+                            font: { size: 11, weight: '600' }
+                        }
+                    }
                 }
             }
         });
