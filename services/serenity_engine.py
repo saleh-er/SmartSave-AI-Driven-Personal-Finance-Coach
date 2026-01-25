@@ -1,33 +1,37 @@
 class SerenityEngine:
     @staticmethod
-    def analyze_finances(transactions):
+    def analyze_finances(transactions, budget=1500.0):
         if not transactions:
-            return {"score": 100, "status": "No data", "total_spent": 0}
+            return {"score": 100, "status": "Perfect", "total_spent": 0}
 
-        # Cette ligne magique gère t['amount'] (dict) ET t.amount (objet SQL)
-        total_spent = sum(
-            t.amount if hasattr(t, 'amount') else t.get('amount', 0) 
-            for t in transactions
-        )
+        # 1. Calcul du total dépensé
+        total_spent = sum(float(t.amount if hasattr(t, 'amount') else t['amount']) for t in transactions)
         
-        # Idem pour les dépenses essentielles
-        essential_spent = sum(
-            t.amount if hasattr(t, 'amount') else t.get('amount', 0)
-            for t in transactions 
-            if (t.is_essential if hasattr(t, 'is_essential') else t.get('is_essential', False))
-        )
-
-        # Calcul du score (exemple de logique simple)
-        if total_spent == 0:
-            score = 100
+        # 2. Logique du Score (Basée sur le budget réel)
+        # Si on a dépensé 0, le score est 100. 
+        # Plus on dépense, plus le score baisse.
+        
+        usage_ratio = total_spent / budget
+        
+        # Formule : On part de 100 et on retire des points selon l'utilisation du budget
+        if usage_ratio <= 0.5:
+            score = 100 - (usage_ratio * 40) # Entre 100 et 80
+        elif usage_ratio <= 1.0:
+            score = 80 - ((usage_ratio - 0.5) * 100) # Entre 80 et 30
         else:
-            pleasure_ratio = (total_spent - essential_spent) / total_spent
-            score = max(0, 100 - (pleasure_ratio * 100))
+            score = 30 - ((usage_ratio - 1.0) * 20) # En dessous de 30 si dépassement
+            
+        # On s'assure que le score reste entre 0 et 100
+        score = max(0, min(100, int(score)))
 
-        status = "Good" if score > 70 else "Warning" if score > 40 else "Critical"
-        
+        # 3. Détermination du statut
+        if score > 80: status = "Excellent"
+        elif score > 50: status = "Good"
+        elif score > 20: status = "Warning"
+        else: status = "Critical"
+
         return {
-            "score": round(score, 0),
+            "score": score,
             "status": status,
             "total_spent": round(total_spent, 2)
         }
