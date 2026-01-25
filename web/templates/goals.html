@@ -42,9 +42,19 @@
                         <div class="progress-fill" style="width: {{ percent }}%; height: 100%; background: {{ goal.color }}; border-radius: 6px; box-shadow: 0 0 15px {{ goal.color }}66;"></div>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 15px;">
                         <span style="font-weight: 600;">€{{ goal.current }} saved</span>
                         <span style="color: var(--text-secondary);">€{{ goal.target - goal.current }} left</span>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <input type="number" id="save-amount-{{ goal.id }}" placeholder="€" 
+                               style="width: 80px; padding: 8px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
+                        <button onclick="depositMoney({{ goal.id }}, '{{ goal.color }}')" 
+                                style="flex: 1; padding: 8px; border-radius: 8px; border: none; background: {{ goal.color }}; color: white; font-weight: 600; cursor: pointer; transition: 0.2s;"
+                                onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                            Add Savings
+                        </button>
                     </div>
                 </div>
             </div>
@@ -80,18 +90,10 @@
         </main>
 
         <nav class="bottom-nav">
-            <a href="/" class="nav-link">
-                <i class="fas fa-home"></i> <span>Home</span>
-            </a>
-            <a href="/analytics" class="nav-link">
-                <i class="fas fa-chart-line"></i> <span>Stats</span>
-            </a>
-            <a href="/coach" class="nav-link">
-                <i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span>
-            </a>
-            <a href="/goals" class="nav-link active">
-                <i class="fas fa-bullseye"></i> <span>Goals</span>
-            </a>
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> <span>Home</span></a>
+            <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i> <span>Stats</span></a>
+            <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span></a>
+            <a href="/goals" class="nav-link active"><i class="fas fa-bullseye"></i> <span>Goals</span></a>
         </nav>
     </div>
 
@@ -106,11 +108,37 @@
             document.getElementById('add-btn').style.display = 'flex';
         }
 
+        async function depositMoney(goalId, color) {
+            const input = document.getElementById(`save-amount-${goalId}`);
+            const amount = input.value;
+
+            if (!amount || amount <= 0) return alert("Enter a valid amount!");
+
+            try {
+                const response = await fetch(`/add-savings/${goalId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: parseFloat(amount) })
+                });
+
+                if (response.ok) {
+                    confetti({
+                        particleCount: 100,
+                        spread: 60,
+                        origin: { y: 0.7 },
+                        colors: [color, '#ffffff']
+                    });
+                    setTimeout(() => location.reload(), 800);
+                }
+            } catch (error) {
+                alert("Error updating savings.");
+            }
+        }
+
         async function saveGoal() {
             const name = document.getElementById('goal-name').value;
             const target = document.getElementById('goal-target').value;
             const color = document.getElementById('goal-color').value;
-
             if (!name || !target) return alert("Please fill all fields!");
 
             const response = await fetch('/add-goal', {
@@ -125,15 +153,10 @@
             }
         }
 
-        // CORRECTION : La fonction utilise maintenant l'ID
         async function deleteGoal(id, name) {
             if (!confirm(`Delete "${name}"?`)) return;
             const response = await fetch(`/delete-goal/${id}`, { method: 'DELETE' });
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                alert("Error: Could not delete the goal.");
-            }
+            if (response.ok) window.location.reload();
         }
 
         async function getAIPlan() {

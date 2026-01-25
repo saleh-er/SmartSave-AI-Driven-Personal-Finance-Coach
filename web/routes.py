@@ -210,7 +210,26 @@ async def read_home(request: Request, db: Session = Depends(get_db)):
         "dynamic_alert": "ready to save " if not db_tx else None
     })
 
+# ajout d'un route Add-saving-goal
+@router.post("/add-savings/{goal_id}")
+async def add_savings(goal_id: int, payload: dict = Body(...), db: Session = Depends(get_db)):
+    amount_to_add = float(payload.get("amount", 0))
+    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+    
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    
+    try:
+        goal.current += amount_to_add
+        db.commit()
+        db.refresh(goal)
+        return {"status": "success", "new_current": goal.current}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error updating savings")
 # Route pour la page des objectifs
+
+
 @router.get("/goals", response_class=HTMLResponse)
 async def read_goals(request: Request, db: Session = Depends(get_db)):
     # CORRECTION : Utilisation de Goal au lieu de models.Goal
