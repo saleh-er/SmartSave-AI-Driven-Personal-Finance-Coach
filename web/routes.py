@@ -27,9 +27,27 @@ router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
 coach = AICoach()
 
-# --- 1. MOCK DATA ---
+import json
+import os
 
-USER_CONFIG = {"monthly_budget": 1500.0}
+CONFIG_FILE = "user_settings.json"
+
+def save_budget_to_disk(amount):
+    """Enregistre le budget dans un fichier JSON"""
+    with open(CONFIG_FILE, "w") as f:
+        json.dump({"monthly_budget": float(amount)}, f)
+
+def load_budget_from_disk():
+    """Charge le budget depuis le fichier ou renvoie 1500 par défaut"""
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f).get("monthly_budget", 1500.0)
+    return 1500.0
+
+# On remplace ton ancienne USER_CONFIG par celle-ci
+USER_CONFIG = {"monthly_budget": load_budget_from_disk()}
+
+# On initialise au démarrage
 chat_history = []
 
 MOCK_TRANSACTIONS = [
@@ -43,16 +61,18 @@ MOCK_TRANSACTIONS = [
 # --- 2. ROUTES API ---
 @router.post("/update-budget")
 async def update_budget(payload: dict = Body(...)):
-    """Met à jour le plafond budgétaire global"""
+    """Met à jour le plafond et le sauvegarde sur le disque"""
     new_budget = payload.get("budget")
     if new_budget is not None:
         try:
-            USER_CONFIG["monthly_budget"] = float(new_budget)
-            return {"status": "success", "budget": USER_CONFIG["monthly_budget"]}
+            val = float(new_budget)
+            USER_CONFIG["monthly_budget"] = val
+            # SAUVEGARDE PHYSIQUE ICI
+            save_budget_to_disk(val) 
+            return {"status": "success", "budget": val}
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid number")
     raise HTTPException(status_code=400, detail="Missing budget data")
-
 
 
 @router.post("/chat")
