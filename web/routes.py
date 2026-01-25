@@ -82,7 +82,8 @@ async def read_home(request: Request, db: Session = Depends(get_db)):
     db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
     
-    analysis = SerenityEngine.analyze_finances(tx_to_analyze)
+    analysis = SerenityEngine.analyze_finances(
+        tx_to_analyze, budget=USER_CONFIG["monthly_budget"])
 
     # On récupère le budget actuel depuis USER_CONFIG
     current_budget = USER_CONFIG["monthly_budget"]
