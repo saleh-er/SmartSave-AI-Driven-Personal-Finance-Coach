@@ -70,6 +70,24 @@
             font-size: 0.85rem;
             color: #94a3b8;
         }
+
+        /* Style pour la liste des transactions */
+        .tx-list-container {
+            margin-top: 20px;
+            margin-bottom: 100px;
+        }
+        .tx-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .tx-info p { margin: 0; font-weight: 600; }
+        .tx-info span { font-size: 0.75rem; color: #94a3b8; }
+        .tx-amount-group { display: flex; align-items: center; gap: 15px; }
+        .btn-delete { color: #EF4444; background: none; border: none; cursor: pointer; font-size: 1rem; transition: transform 0.2s; }
+        .btn-delete:hover { transform: scale(1.2); }
     </style>
 </head>
 <body>
@@ -117,6 +135,28 @@
                 </div>
             </div>
 
+            <div class="glass-card tx-list-container">
+                <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Recent Transactions</h3>
+                {% if transactions %}
+                    {% for tx in transactions %}
+                    <div class="tx-item">
+                        <div class="tx-info">
+                            <p>{{ tx.merchant }}</p>
+                            <span>{{ tx.category }}</span>
+                        </div>
+                        <div class="tx-amount-group">
+                            <span style="font-weight: 800;">€{{ tx.amount }}</span>
+                            <button onclick="deleteTransaction({{ tx.id }})" class="btn-delete">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="text-align: center; color: #94a3b8; font-size: 0.9rem;">No transactions yet. Add your first expense!</p>
+                {% endif %}
+            </div>
+
             <div class="glass-card ai-feed" onclick="window.location.href='/coach'">
                 <div class="ai-header">
                     <span class="ai-icon">✨</span>
@@ -149,7 +189,26 @@
     </div>
 
     <script>
-    // --- FONCTION POUR ENVOYER LA TRANSACTION ---
+    // --- SUPPRIMER UNE TRANSACTION ---
+    async function deleteTransaction(txId) {
+        if (!confirm("Are you sure you want to delete this expense?")) return;
+
+        try {
+            const response = await fetch(`/delete-transaction/${txId}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (result.status === "success") {
+                showNotification("Transaction deleted", "fa-trash");
+                setTimeout(() => location.reload(), 800);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification("Delete failed", "fa-xmark");
+        }
+    }
+
+    // --- ENVOYER LA TRANSACTION ---
     function submitTransaction() {
         const data = {
             merchant: document.getElementById('tx-merchant').value,
@@ -200,7 +259,8 @@
     }
 
     window.onload = () => {
-        const score = parseInt(document.getElementById('scoreValue').innerText);
+        const scoreElement = document.getElementById('scoreValue');
+        const score = scoreElement ? parseInt(scoreElement.innerText) : 0;
         const ring = document.getElementById('serenityRing');
         const aiText = document.getElementById('aiDynamicText');
         

@@ -72,6 +72,22 @@ async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_d
     chat_history.append({"role": "assistant", "content": advice})
     return {"response": advice}
 
+# delete transaction by id
+@router.delete("/delete-transaction/{tx_id}")
+async def delete_transaction(tx_id: int, db: Session = Depends(get_db)):
+    # CORRECTION : Utilisation de Transaction au lieu de models.Transaction
+    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    try:
+        db.delete(tx)
+        db.commit()
+        return {"status": "success", "message": "Transaction deleted"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Calculate savings plan
 
 @router.post("/calculate-plan")
 async def calculate_plan(payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -139,11 +155,12 @@ async def delete_goal(goal_name: str, db: Session = Depends(get_db)):
 
 @router.get("/", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
-    # CORRECTION : Utilisation de Transaction au lieu de models.Transaction
-    db_tx = db.query(Transaction).all()
+# On récupère les vraies transactions triées par ID décroissant (plus récentes en premier)    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
+    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
     
     analysis = SerenityEngine.analyze_finances(tx_to_analyze)
+    # Calcul du reste avant le seuil de 1500€
     remaining = 1500.00 - analysis['total_spent']
 
     return templates.TemplateResponse("index.html", {
@@ -152,10 +169,11 @@ async def read_home(request: Request, db: Session = Depends(get_db)):
         "score": analysis["score"],
         "status": analysis["status"],
         "remaining": round(remaining, 2),
-        "transactions": tx_to_analyze[:3],
-        "dynamic_alert": None
+        "transactions": db_tx, 
+        "dynamic_alert": "ready to save " if not db_tx else None
     })
 
+# Route pour la page des objectifs
 @router.get("/goals", response_class=HTMLResponse)
 async def read_goals(request: Request, db: Session = Depends(get_db)):
     # CORRECTION : Utilisation de Goal au lieu de models.Goal
