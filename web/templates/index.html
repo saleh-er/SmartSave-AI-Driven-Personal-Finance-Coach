@@ -26,7 +26,7 @@
             border-color: var(--accent-teal);
         }
 
-        /* Styles pour le nouveau formulaire de transaction */
+        /* Styles pour le formulaire de transaction */
         .transaction-form {
             margin-top: 20px;
             padding: 20px;
@@ -74,7 +74,7 @@
         /* Style pour la liste des transactions */
         .tx-list-container {
             margin-top: 20px;
-            margin-bottom: 100px;
+            margin-bottom: 30px;
         }
         .tx-item {
             display: flex;
@@ -88,6 +88,15 @@
         .tx-amount-group { display: flex; align-items: center; gap: 15px; }
         .btn-delete { color: #EF4444; background: none; border: none; cursor: pointer; font-size: 1rem; transition: transform 0.2s; }
         .btn-delete:hover { transform: scale(1.2); }
+
+        /* Style pour la carte budget modifiable */
+        .balance-card {
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .balance-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-teal);
+        }
     </style>
 </head>
 <body>
@@ -108,9 +117,13 @@
                 </div>
             </div>
 
-            <div class="glass-card balance-card">
-                <span class="card-label">Remaining to spend</span>
+            <div class="glass-card balance-card" onclick="editBudget()" style="cursor: pointer;">
+                <span class="card-label">Remaining to spend (Limit: €{{ budget|int }})</span>
                 <h2 class="balance-amount">€{{ remaining }}</h2>
+                <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                    <i class="fas fa-pen" style="font-size: 0.7rem; color: var(--accent-teal);"></i>
+                    <p style="font-size: 0.75rem; color: var(--accent-teal); font-weight: 600;">Tap to adjust budget</p>
+                </div>
             </div>
 
             <div class="glass-card transaction-form">
@@ -157,7 +170,7 @@
                 {% endif %}
             </div>
 
-            <div class="glass-card ai-feed" onclick="window.location.href='/coach'">
+            <div class="glass-card ai-feed" onclick="window.location.href='/coach'" style="margin-bottom: 100px;">
                 <div class="ai-header">
                     <span class="ai-icon">✨</span>
                     <span class="ai-title">AI Feed</span>
@@ -170,40 +183,53 @@
 
         <nav class="bottom-nav">
             <a href="/" class="nav-link {{ 'active' if request.url.path == '/' or request.url.path == '' }}">
-                <i class="fas fa-home"></i> 
-                <span>Home</span>
+                <i class="fas fa-home"></i> <span>Home</span>
             </a>
             <a href="/analytics" class="nav-link {{ 'active' if request.url.path == '/analytics' }}">
-                <i class="fas fa-chart-line"></i> 
-                <span>Analytics</span>
+                <i class="fas fa-chart-line"></i> <span>Analytics</span>
             </a>
             <a href="/coach" class="nav-link {{ 'active' if request.url.path == '/coach' }}">
-                <i class="fas fa-wand-magic-sparkles"></i> 
-                <span>Coach</span>
+                <i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span>
             </a>
             <a href="/goals" class="nav-link {{ 'active' if request.url.path == '/goals' }}">
-                <i class="fas fa-bullseye"></i> 
-                <span>Goals</span>
+                <i class="fas fa-bullseye"></i> <span>Goals</span>
             </a>
         </nav>
     </div>
 
     <script>
+    // --- MODIFIER LE BUDGET ---
+    async function editBudget() {
+        const newBudget = prompt("Set your new monthly budget limit (€):", "{{ budget }}");
+        if (newBudget !== null && newBudget !== "" && !isNaN(newBudget)) {
+            try {
+                const response = await fetch('/update-budget', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ budget: parseFloat(newBudget) })
+                });
+                const result = await response.json();
+                if (result.status === "success") {
+                    showNotification("Budget updated to €" + newBudget, "fa-cog");
+                    setTimeout(() => location.reload(), 800);
+                }
+            } catch (error) {
+                showNotification("Error updating budget", "fa-xmark");
+            }
+        }
+    }
+
     // --- SUPPRIMER UNE TRANSACTION ---
     async function deleteTransaction(txId) {
         if (!confirm("Are you sure you want to delete this expense?")) return;
-
         try {
-            const response = await fetch(`/delete-transaction/${txId}`, {
-                method: 'DELETE'
-            });
+            const response = await fetch(`/delete-transaction/${txId}`, { method: 'DELETE' });
             const result = await response.json();
             if (result.status === "success") {
                 showNotification("Transaction deleted", "fa-trash");
                 setTimeout(() => location.reload(), 800);
             }
         } catch (error) {
-            console.error('Error:', error);
             showNotification("Delete failed", "fa-xmark");
         }
     }
@@ -216,12 +242,10 @@
             category: document.getElementById('tx-category').value,
             is_essential: document.getElementById('tx-essential').checked
         };
-
         if (!data.merchant || !data.amount) {
             showNotification("Please fill in all fields!", "fa-exclamation-triangle");
             return;
         }
-
         fetch('/add-transaction', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -234,54 +258,31 @@
                 setTimeout(() => location.reload(), 800);
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification("Error saving transaction", "fa-xmark");
-        });
+        .catch(error => showNotification("Error saving transaction", "fa-xmark"));
     }
 
     function showNotification(message, icon = "fa-bell") {
         const container = document.getElementById('notification-container');
         const toast = document.createElement('div');
         toast.className = 'toast';
-        toast.innerHTML = `
-            <i class="fas ${icon}"></i>
-            <div class="toast-content">
-                <p>${message}</p>
-            </div>
-        `;
+        toast.innerHTML = `<i class="fas ${icon}"></i><div class="toast-content"><p>${message}</p></div>`;
         container.appendChild(toast);
         setTimeout(() => toast.classList.add('show'), 100);
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 500);
-        }, 6000);
+        }, 3000);
     }
 
     window.onload = () => {
-        const scoreElement = document.getElementById('scoreValue');
-        const score = scoreElement ? parseInt(scoreElement.innerText) : 0;
+        const scoreVal = document.getElementById('scoreValue');
+        const score = scoreVal ? parseInt(scoreVal.innerText) : 0;
         const ring = document.getElementById('serenityRing');
         const aiText = document.getElementById('aiDynamicText');
         
-        if (score >= 80) {
-            ring.style.borderColor = "#10B981";
-            aiText.innerHTML = "Everything looks great, Saleh! Your savings are on track. 🚀";
-        } else if (score >= 50) {
-            ring.style.borderColor = "#F59E0B";
-            aiText.innerHTML = "You're doing okay, but watch those <span class='highlight'>non-essential</span> expenses.";
-        } else {
-            ring.style.borderColor = "#EF4444";
-            ring.classList.add('pulse-active');
-            aiText.innerHTML = "Warning: High spending detected! Click here to chat with me. ⚠️";
-        }
-
-        const alertMsg = "{{ dynamic_alert if dynamic_alert else '' }}";
-        if (alertMsg && alertMsg !== "None" && alertMsg !== "") {
-            setTimeout(() => {
-                showNotification(alertMsg, "fa-robot");
-            }, 1500);
-        }
+        if (score >= 80) { ring.style.borderColor = "#10B981"; aiText.innerHTML = "On track, Saleh! 🚀"; }
+        else if (score >= 50) { ring.style.borderColor = "#F59E0B"; aiText.innerHTML = "Watch your expenses."; }
+        else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Warning! Check chat. ⚠️"; }
     };
     </script>
 </body>

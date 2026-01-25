@@ -28,6 +28,10 @@ templates = Jinja2Templates(directory="web/templates")
 coach = AICoach()
 
 # --- 1. MOCK DATA ---
+
+USER_CONFIG = {"monthly_budget": 1500.0}
+chat_history = []
+
 MOCK_TRANSACTIONS = [
     {"id": 1, "merchant": "Netflix", "amount": 15.99, "category": "Subs", "is_essential": False},
     {"id": 2, "merchant": "Carrefour", "amount": 82.50, "category": "Food", "is_essential": True},
@@ -36,40 +40,67 @@ MOCK_TRANSACTIONS = [
     {"id": 5, "merchant": "Starbucks", "amount": 6.50, "category": "Food", "is_essential": False},
 ]
 
-chat_history = []
-
 # --- 2. ROUTES API ---
+@router.post("/update-budget")
+async def update_budget(payload: dict = Body(...)):
+    """Met à jour le plafond budgétaire global"""
+    new_budget = payload.get("budget")
+    if new_budget is not None:
+        try:
+            USER_CONFIG["monthly_budget"] = float(new_budget)
+            return {"status": "success", "budget": USER_CONFIG["monthly_budget"]}
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid number")
+    raise HTTPException(status_code=400, detail="Missing budget data")
+
+
 
 @router.post("/chat")
 async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_db)):
     user_msg = payload.get("message")
     
-    # 1. Récupérer les vraies transactions en base
+    # 1. Récupérer les vraies transactions en base pour le contexte
     db_tx = db.query(Transaction).all()
     tx_summary = ""
     if db_tx:
-        # On crée un petit résumé textuel pour l'IA
         tx_summary = ", ".join([f"{t.merchant}: {t.amount}€ ({t.category})" for t in db_tx[-10:]])
     else:
-        tx_summary = "No real transactions yet."
+        tx_summary = "No transactions yet."
 
-    # 2. On analyse le score pour donner du contexte
+    # 2. Analyse financière pour le score
     analysis = SerenityEngine.analyze_finances(db_tx if db_tx else MOCK_TRANSACTIONS)
     
-    # 3. On construit l'historique pour l'IA
+    # 3. LE PROMPT DU COACH (L'âme de ton IA)
+    # On définit ici son rôle, ton score actuel et tes dépenses récentes
+    system_instructions = {
+        "role": "system", 
+        "content": f"""
+        You are a high-level personal financial coach. 
+        User Context:
+        - Name: Saleh
+        - Current Serenity Score: {analysis['score']}/100
+        - Monthly Budget Limit: {USER_CONFIG['monthly_budget']}€
+        - Recent Transactions: {tx_summary}
+
+        Instructions:
+        1. Be professional, motivating, and use emojis.
+        2. Always refer to the user's real transactions if they ask about their spending.
+        3. If the score is low, be protective and give urgent advice.
+        4. Answer in English.
+        """
+    }
+
+    # 4. Historique de la conversation (on garde les 5 derniers messages + les instructions)
+    chat_context = [system_instructions] + chat_history[-5:]
+    chat_context.append({"role": "user", "content": user_msg})
+    
+    # 5. Appel à l'IA
+    advice = coach.get_financial_advice(chat_context, analysis["score"], tx_summary)
+    
+    # Sauvegarde dans l'historique local
     chat_history.append({"role": "user", "content": user_msg})
-    
-    # On donne à l'IA les infos sur tes dépenses dans le prompt système
-    system_prompt = f"""
-    You are a financial coach. The user's Serenity Score is {analysis['score']}/100.
-    Their recent transactions are: {tx_summary}.
-    Answer in a helpful and friendly way in English.
-    """
-    
-    # 4. Appel à l'IA avec le contexte réel
-    advice = coach.get_financial_advice(chat_history[-5:], analysis["score"], tx_summary)
-    
     chat_history.append({"role": "assistant", "content": advice})
+    
     return {"response": advice}
 
 # delete transaction by id
@@ -141,10 +172,10 @@ async def add_goal(payload: dict = Body(...), db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail="Goal already exists or invalid data")
 
-@router.delete("/delete-goal/{goal_name}")
-async def delete_goal(goal_name: str, db: Session = Depends(get_db)):
+@router.delete("/delete-goal/{goal_id}")
+async def delete_goal(goal_id: int, db: Session = Depends(get_db)):
     # CORRECTION : Utilisation de Goal au lieu de models.Goal
-    goal = db.query(Goal).filter(Goal.name == goal_name).first()
+    goal = db.query(Goal).filter(Goal.id == goal_id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     db.delete(goal)
@@ -152,16 +183,21 @@ async def delete_goal(goal_name: str, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 # --- 3. ROUTES PAGES ---
-
+# Route pour la page d'accueil
+    # Calcul du reste avant le seuil de 1500€
+USER_CONFIG = {"monthly_budget": 1500.0}
 @router.get("/", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
-# On récupère les vraies transactions triées par ID décroissant (plus récentes en premier)    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
     
     analysis = SerenityEngine.analyze_finances(tx_to_analyze)
-    # Calcul du reste avant le seuil de 1500€
-    remaining = 1500.00 - analysis['total_spent']
+
+    # On récupère le budget actuel depuis USER_CONFIG
+    current_budget = USER_CONFIG["monthly_budget"]
+    
+    # On calcule le reste basé sur ce budget dynamique
+    remaining = current_budget - analysis['total_spent']
 
     return templates.TemplateResponse("index.html", {
         "request": request,
@@ -169,6 +205,7 @@ async def read_home(request: Request, db: Session = Depends(get_db)):
         "score": analysis["score"],
         "status": analysis["status"],
         "remaining": round(remaining, 2),
+        "budget": current_budget,
         "transactions": db_tx, 
         "dynamic_alert": "ready to save " if not db_tx else None
     })
