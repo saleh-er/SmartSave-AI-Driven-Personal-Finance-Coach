@@ -41,11 +41,34 @@ chat_history = []
 # --- 2. ROUTES API ---
 
 @router.post("/chat")
-async def chat_with_coach(payload: dict = Body(...)):
+async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_db)):
     user_msg = payload.get("message")
+    
+    # 1. Récupérer les vraies transactions en base
+    db_tx = db.query(Transaction).all()
+    tx_summary = ""
+    if db_tx:
+        # On crée un petit résumé textuel pour l'IA
+        tx_summary = ", ".join([f"{t.merchant}: {t.amount}€ ({t.category})" for t in db_tx[-10:]])
+    else:
+        tx_summary = "No real transactions yet."
+
+    # 2. On analyse le score pour donner du contexte
+    analysis = SerenityEngine.analyze_finances(db_tx if db_tx else MOCK_TRANSACTIONS)
+    
+    # 3. On construit l'historique pour l'IA
     chat_history.append({"role": "user", "content": user_msg})
-    analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
-    advice = coach.get_financial_advice(chat_history[-5:], analysis["score"], "Netflix, Uber, Starbucks, Loyer")
+    
+    # On donne à l'IA les infos sur tes dépenses dans le prompt système
+    system_prompt = f"""
+    You are a financial coach. The user's Serenity Score is {analysis['score']}/100.
+    Their recent transactions are: {tx_summary}.
+    Answer in a helpful and friendly way in English.
+    """
+    
+    # 4. Appel à l'IA avec le contexte réel
+    advice = coach.get_financial_advice(chat_history[-5:], analysis["score"], tx_summary)
+    
     chat_history.append({"role": "assistant", "content": advice})
     return {"response": advice}
 
