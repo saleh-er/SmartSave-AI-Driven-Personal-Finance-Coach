@@ -374,3 +374,20 @@ body {
     font-size: 0.85rem;
     font-weight: 500;
 }
+/* Style du champ de sélection lui-même */
+#tx-category {
+    background-color: #1e1f2c; /* Fond sombre */
+    color: white;              /* Texte blanc */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    width: 100%;
+    outline: none;
+}
+
+/* Style des options à l'intérieur de la liste */
+#tx-category option {
+    background-color: #1a1b2e; /* Couleur de fond des choix */
+    color: white;
+    padding: 10px;
+}

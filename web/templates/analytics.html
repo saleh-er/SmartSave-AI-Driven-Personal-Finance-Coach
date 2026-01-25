@@ -42,22 +42,24 @@
             </div>
         </div>
 
-        <div class="glass-card" style="margin-bottom: 25px; border: 1px solid var(--accent-teal);">
+        <div class="glass-card" style="margin-bottom: 25px; border: 1px solid var(--accent-teal); position: relative;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="font-size: 1.1rem; margin: 0; color: white;">
                     <i class="fas fa-robot" style="color: var(--accent-teal);"></i> AI Financial Report
                 </h3>
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-copy" onclick="copyReport()" class="action-btn secondary" style="display: none; padding: 8px 15px; font-size: 0.8rem; width: auto; background: rgba(255,255,255,0.1);">
+                <div style="display: flex; gap: 10px; position: relative; z-index: 100;">
+                    <button id="btn-copy" onclick="copyReport()" class="action-btn secondary" 
+                            style="display: none; padding: 8px 15px; font-size: 0.8rem; width: auto; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">
                         <i class="fas fa-copy"></i> Copy
                     </button>
-                    <button id="btn-report" onclick="getAIReport()" class="action-btn primary" style="padding: 8px 15px; font-size: 0.8rem; width: auto;">
+                    <button id="btn-report" onclick="getAIReport()" class="action-btn primary" 
+                            style="padding: 8px 15px; font-size: 0.8rem; width: auto; cursor: pointer;">
                         Generate
                     </button>
                 </div>
             </div>
             
-            <div id="report-content" style="display: none; font-size: 0.9rem; line-height: 1.6; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px;">
+            <div id="report-content" style="display: none; font-size: 0.9rem; line-height: 1.6; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; position: relative; z-index: 1;">
             </div>
 
             <div id="report-loader" style="display: none; text-align: center; padding: 20px;">
@@ -158,7 +160,6 @@
             try {
                 const response = await fetch('/generate-report');
                 const data = await response.json();
-                
                 content.innerHTML = data.report.replace(/\n/g, '<br>');
                 content.style.display = "block";
                 btnCopy.style.display = "inline-block";
@@ -173,26 +174,48 @@
             }
         }
 
-        // Fonction pour copier le rapport dans le presse-papier
-        async function copyReport() {
+        // Fonction Robuste pour copier le rapport
+        function copyReport() {
             const content = document.getElementById('report-content');
             const btnCopy = document.getElementById('btn-copy');
-            const textToCopy = content.innerText;
+            const textToCopy = content.innerText || content.textContent;
 
-            try {
-                await navigator.clipboard.writeText(textToCopy);
-                
-                const originalContent = btnCopy.innerHTML;
-                btnCopy.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                btnCopy.style.color = "var(--accent-teal)";
-                
-                setTimeout(() => {
-                    btnCopy.innerHTML = originalContent;
-                    btnCopy.style.color = "white";
-                }, 2000);
-            } catch (err) {
-                console.error('Erreur lors de la copie :', err);
+            // Tentative avec l'API moderne
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    handleCopySuccess(btnCopy);
+                }).catch(() => {
+                    fallbackCopyText(textToCopy, btnCopy);
+                });
+            } else {
+                fallbackCopyText(textToCopy, btnCopy);
             }
+        }
+
+        // Méthode de secours pour la copie (compatible tout navigateur)
+        function fallbackCopyText(text, btn) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                handleCopySuccess(btn);
+            } catch (err) {
+                console.error('Erreur fallback copy', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function handleCopySuccess(btn) {
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            btn.style.color = "#10B981";
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.style.color = "white";
+            }, 2000);
         }
     </script>
 </body>
