@@ -165,8 +165,25 @@ async def delete_transaction(tx_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-# Calculate savings plan
+# Generate monthly report
+@router.get("/generate-report")
+async def generate_report(db: Session = Depends(get_db)):
+    db_tx = db.query(Transaction).all()
+    if not db_tx:
+        return {"report": "No transactions found. Add some expenses to get an AI analysis! 💸"}
+    
+    # Résumé structuré pour l'IA
+    summary = "\n".join([f"- {t.merchant}: {t.amount}€ ({t.category})" for t in db_tx[-20:]])
+    
+    prompt = [
+        {"role": "system", "content": "You are a professional financial advisor. Analyze the user's spending and provide a structured, motivating report in English with emojis."},
+        {"role": "user", "content": f"Transactions:\n{summary}\nBudget Limit: {USER_CONFIG['monthly_budget']}€\n\nPlease provide a monthly summary and 3 tips."}
+    ]
+    
+    report = coach.get_financial_advice(prompt, 100, "Monthly Review")
+    return {"report": report}
 
+# Calculate savings plan
 @router.post("/calculate-plan")
 async def calculate_plan(payload: dict = Body(...), db: Session = Depends(get_db)):
     goal_name = payload.get("name")

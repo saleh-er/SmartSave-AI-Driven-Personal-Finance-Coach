@@ -42,6 +42,25 @@
             </div>
         </div>
 
+        <div class="glass-card" style="margin-bottom: 25px; border: 1px solid var(--accent-teal);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="font-size: 1.1rem; margin: 0; color: white;">
+                    <i class="fas fa-robot" style="color: var(--accent-teal);"></i> AI Financial Report
+                </h3>
+                <button id="btn-report" onclick="getAIReport()" class="action-btn primary" style="padding: 8px 15px; font-size: 0.8rem; width: auto;">
+                    Generate
+                </button>
+            </div>
+            
+            <div id="report-content" style="display: none; font-size: 0.9rem; line-height: 1.6; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px;">
+                </div>
+
+            <div id="report-loader" style="display: none; text-align: center; padding: 20px;">
+                <i class="fas fa-circle-notch fa-spin" style="font-size: 1.5rem; color: var(--accent-teal);"></i>
+                <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-secondary);">Analyzing your spending habits...</p>
+            </div>
+        </div>
+
         <div class="glass-card" style="margin-bottom: 120px; padding: 20px;">
             <h3 style="margin-bottom: 25px; font-size: 1.1rem; font-weight: 800;">Top Categories</h3>
             
@@ -82,6 +101,7 @@
     </div>
 
     <script>
+        // Graphique Chart.js
         const ctx = document.getElementById('spendingChart').getContext('2d');
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
         gradient.addColorStop(0, '#6366F1'); 
@@ -116,6 +136,35 @@
                 }
             }
         });
+
+        // Fonction pour le Bilan IA
+        async function getAIReport() {
+            const btn = document.getElementById('btn-report');
+            const loader = document.getElementById('report-loader');
+            const content = document.getElementById('report-content');
+
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+            loader.style.display = "block";
+            content.style.display = "none";
+
+            try {
+                const response = await fetch('/generate-report');
+                const data = await response.json();
+                
+                // Remplacement des sauts de ligne pour un affichage propre
+                content.innerHTML = data.report.replace(/\n/g, '<br>');
+                content.style.display = "block";
+            } catch (error) {
+                content.innerText = "Error generating report. Please try again.";
+                content.style.display = "block";
+            } finally {
+                loader.style.display = "none";
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                btn.innerText = "Regenerate";
+            }
+        }
     </script>
 </body>
 </html>
