@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -27,9 +28,6 @@ router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
 coach = AICoach()
 
-import json
-import os
-
 CONFIG_FILE = "user_settings.json"
 
 def save_budget_to_disk(amount):
@@ -40,14 +38,17 @@ def save_budget_to_disk(amount):
 def load_budget_from_disk():
     """Charge le budget depuis le fichier ou renvoie 1500 par défaut"""
     if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return json.load(f).get("monthly_budget", 1500.0)
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                data = json.load(f)
+                return float(data.get("monthly_budget", 1500.0))
+        except Exception as e:
+            print(f"Erreur de lecture du budget: {e}")
+            return 1500.0
     return 1500.0
 
-# On remplace ton ancienne USER_CONFIG par celle-ci
+# --- 1. VARIABLES GLOBALES ---
 USER_CONFIG = {"monthly_budget": load_budget_from_disk()}
-
-# On initialise au démarrage
 chat_history = []
 
 MOCK_TRANSACTIONS = [
@@ -73,6 +74,32 @@ async def update_budget(payload: dict = Body(...)):
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid number")
     raise HTTPException(status_code=400, detail="Missing budget data")
+
+# Route pour la page d'accueil
+
+@router.get("/", response_class=HTMLResponse)
+async def read_home(request: Request, db: Session = Depends(get_db)):
+    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
+    tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
+    
+    analysis = SerenityEngine.analyze_finances(tx_to_analyze)
+
+    # On récupère le budget actuel depuis USER_CONFIG
+    current_budget = USER_CONFIG["monthly_budget"]
+    
+    # On calcule le reste basé sur ce budget dynamique
+    remaining = current_budget - analysis['total_spent']
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "name": "Saleh",
+        "score": analysis["score"],
+        "status": analysis["status"],
+        "remaining": round(remaining, 2),
+        "budget": current_budget,
+        "transactions": db_tx, 
+        "dynamic_alert": "ready to save " if not db_tx else None
+    })
 
 
 @router.post("/chat")
@@ -203,32 +230,6 @@ async def delete_goal(goal_id: int, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 # --- 3. ROUTES PAGES ---
-# Route pour la page d'accueil
-    # Calcul du reste avant le seuil de 1500€
-USER_CONFIG = {"monthly_budget": 1500.0}
-@router.get("/", response_class=HTMLResponse)
-async def read_home(request: Request, db: Session = Depends(get_db)):
-    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
-    tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
-    
-    analysis = SerenityEngine.analyze_finances(tx_to_analyze)
-
-    # On récupère le budget actuel depuis USER_CONFIG
-    current_budget = USER_CONFIG["monthly_budget"]
-    
-    # On calcule le reste basé sur ce budget dynamique
-    remaining = current_budget - analysis['total_spent']
-
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "name": "Saleh",
-        "score": analysis["score"],
-        "status": analysis["status"],
-        "remaining": round(remaining, 2),
-        "budget": current_budget,
-        "transactions": db_tx, 
-        "dynamic_alert": "ready to save " if not db_tx else None
-    })
 
 # ajout d'un route Add-saving-goal
 @router.post("/add-savings/{goal_id}")
