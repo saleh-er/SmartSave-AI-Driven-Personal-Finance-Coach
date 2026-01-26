@@ -5,7 +5,7 @@ import io
 import os
 
 # --- TESSERACT CONFIGURATION ---
-# Path to the executable you just installed
+# Ensure Tesseract is installed at this path
 TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 if os.path.exists(TESSERACT_PATH):
@@ -17,72 +17,74 @@ class OCREngine:
     @staticmethod
     def extract_data(image_bytes):
         try:
-            # 1. Load image from bytes sent by the browser
+            # 1. Load image from bytes
             img = Image.open(io.BytesIO(image_bytes))
             
-            # 2. Image Optimization (Preprocessing)
-            # Convert to grayscale and improve contrast to help the OCR
+            # 2. Preprocessing for better accuracy
             img = ImageOps.grayscale(img)
             img = ImageOps.autocontrast(img)
             
-            # 3. Text Extraction (OCR)
-            # 'fra+eng+ara' allows reading French, English, and Arabic simultaneously
-            # --psm 6 treats the image as a uniform block of text
+            # 3. Extracting raw text
+            # lang='fra+eng+ara' supports French, English, and Arabic
             text = pytesseract.image_to_string(img, lang='fra+eng+ara', config='--psm 6')
             
-            print("\n--- OCR RAW TEXT START ---")
-            print(text) 
-            print("--- OCR RAW TEXT END ---\n")
-
-            # 4. Amount Extraction (Robust Regex)
-            amount = 0.0
-            # Look for keywords followed by a number (e.g., TOTAL 15.50)
-            total_match = re.search(r'(?:TOTAL|AMOUNT|EUR|PAY|PRICE)[:\s]*(\d+[.,]\d{2})', text, re.IGNORECASE)
-            
-            if total_match:
-                amount = float(total_match.group(1).replace(',', '.'))
-            else:
-                # Fallback: Find the highest number in the text
-                amounts = re.findall(r'\d+[.,]\d{2}', text)
-                if amounts:
-                    amount = max([float(a.replace(',', '.')) for a in amounts])
-
-            # 5. Merchant Extraction (Store Name)
-            lines = [line.strip() for line in text.split('\n') if len(line.strip()) > 2]
-            # Take the first line containing letters (to avoid dates/numbers)
+            lines = text.split('\n')
+            scanned_items = []
             merchant = "Unknown Merchant"
+            grand_total = 0.0
+
+            print("\n--- STARTING ITEM-BY-ITEM SCAN ---")
+
+            # 4. Extract Merchant (usually the first line with letters)
             for line in lines:
-                if any(c.isalpha() for c in line):
-                    merchant = line
+                clean_line = line.strip()
+                if len(clean_line) > 2 and any(c.isalpha() for c in clean_line):
+                    merchant = clean_line
                     break
 
-            # 6. Smart Category Classification
-            category = "Shopping"
-            lowered_text = text.lower()
-            
-            # Keywords dictionary to guess the category
-            keywords = {
-                "Food": ["cafe", "starbucks", "resto", "mcdo", "bakery", "food", "eat", "grocery", "market"],
-                "Transport": ["uber", "taxi", "train", "fuel", "shell", "gas", "parking"],
-                "Subs": ["netflix", "spotify", "apple", "amazon", "prime", "disney"],
-                "Housing": ["ikea", "rent", "hardware", "furniture"]
-            }
+            # 5. Extract Line Items (Product Name + Price)
+            for line in lines:
+                clean_line = line.strip()
+                # Pattern to find prices (e.g., 10.99 or 5,50)
+                price_search = re.search(r'(\d+[.,]\d{2})', clean_line)
+                
+                if price_search:
+                    current_price = float(price_search.group(1).replace(',', '.'))
+                    # The product name is usually everything before the price
+                    product_name = clean_line.replace(price_search.group(0), "").strip()
+                    
+                    # Ignore lines that are clearly 'Total' or 'Tax' to avoid duplicates
+                    if any(key in clean_line.upper() for key in ["TOTAL", "SUBTOTAL", "TAX", "VAT", "CASH"]):
+                        # If it's the Grand Total line, save it separately
+                        if "TOTAL" in clean_line.upper() and grand_total == 0:
+                            grand_total = current_price
+                        continue
+                    
+                    if len(product_name) > 2:
+                        scanned_items.append({
+                            "label": product_name,
+                            "price": current_price
+                        })
+                        print(f"Found Item: {product_name} -> {current_price}")
 
-            for cat, words in keywords.items():
-                if any(word in lowered_text for word in words):
-                    category = cat
-                    break
+            # 6. Fallback for Grand Total
+            if grand_total == 0:
+                all_prices = re.findall(r'\d+[.,]\d{2}', text)
+                if all_prices:
+                    grand_total = max([float(p.replace(',', '.')) for p in all_prices])
 
             return {
                 "merchant": merchant,
-                "amount": amount,
-                "category": category
+                "items": scanned_items,
+                "total": grand_total,
+                "category": "Shopping" # Default category
             }
 
         except Exception as e:
             print(f"❌ OCR Engine Error: {str(e)}")
             return {
                 "merchant": "Scan Error",
-                "amount": 0.0,
+                "items": [],
+                "total": 0.0,
                 "category": "None"
             }

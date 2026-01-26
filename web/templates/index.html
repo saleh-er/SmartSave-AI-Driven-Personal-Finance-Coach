@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,18 +8,15 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Animation de pulsation pour les scores faibles */
         @keyframes pulse-danger {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
             70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .pulse-active { animation: pulse-danger 2s infinite; }
-        
         .ai-feed { cursor: pointer; transition: transform 0.2s; }
         .ai-feed:hover { transform: translateY(-3px); border-color: var(--accent-teal); }
 
-        /* Styles pour le bouton Settings dans le coin */
         .btn-settings-top {
             color: white; 
             background: rgba(255, 255, 255, 0.05); 
@@ -33,15 +30,9 @@
             text-decoration: none; 
             transition: all 0.3s ease;
         }
-        .btn-settings-top:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: rotate(45deg);
-            border-color: var(--accent-teal);
-        }
 
-        /* Formulaire */
         .transaction-form { margin-top: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .form-row { display: flex; gap: 10px; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 5px; }
         .transaction-form input, .transaction-form select {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -52,7 +43,6 @@
             outline: none;
         }
 
-        /* Style pour l'option de scan */
         .scan-option {
             text-align: center;
             padding: 15px;
@@ -62,9 +52,15 @@
             background: rgba(16, 185, 129, 0.03);
             transition: 0.3s;
         }
-        .scan-option:hover {
-            border-color: var(--accent-teal);
-            background: rgba(16, 185, 129, 0.08);
+        
+        #scanned-items-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
         }
     </style>
 </head>
@@ -76,9 +72,7 @@
                 <h1 class="logo">Smart<span>Save</span></h1>
                 <p class="tagline">Welcome back, Saleh ✨</p>
             </div>
-            <a href="/settings" class="btn-settings-top" title="Settings">
-                <i class="fas fa-cog"></i>
-            </a>
+            <a href="/settings" class="btn-settings-top"><i class="fas fa-cog"></i></a>
         </header>
 
         <main>
@@ -92,12 +86,11 @@
             </div>
 
             <div class="glass-card balance-card" onclick="editBudget()" style="cursor: pointer; margin-bottom: 20px;">
-                <span class="card-label">Remaining to spend (Limit: €{{ budget|int }})</span>
+                <span class="card-label">Remaining (Limit: €{{ budget|int }})</span>
                 <h2 class="balance-amount">€{{ remaining }}</h2>
-                <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                    <i class="fas fa-pen" style="font-size: 0.7rem; color: var(--accent-teal);"></i>
-                    <p style="font-size: 0.75rem; color: var(--accent-teal); font-weight: 600;">Tap to adjust budget</p>
-                </div>
+                <p style="font-size: 0.75rem; color: var(--accent-teal); font-weight: 600; margin-top: 5px;">
+                    <i class="fas fa-pen"></i> Tap to adjust
+                </p>
             </div>
 
             <div class="glass-card transaction-form">
@@ -108,6 +101,11 @@
                         <i class="fas fa-camera"></i> Scan Receipt
                     </button>
                     <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(this)">
+                </div>
+
+                <div id="scanned-items-container" style="display: none;">
+                    <h4 style="font-size: 0.75rem; color: var(--accent-teal); margin-bottom: 8px;">DETECTED ITEMS</h4>
+                    <div id="items-list"></div>
                 </div>
 
                 <div class="form-row">
@@ -121,12 +119,13 @@
                         <option value="Housing">Housing 🏠</option>
                         <option value="Subs">Subscriptions 📺</option>
                         <option value="Fun">Entertainment ✨</option>
+                        <option value="Shopping">Shopping 🛍️</option>
                     </select>
-                    <button onclick="submitTransaction()" class="btn-add-tx" style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">Add</button>
+                    <button id="submit-btn" onclick="submitTransaction()" class="btn-add-tx" style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">Add</button>
                 </div>
                 <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8;">
                     <input type="checkbox" id="tx-essential" checked>
-                    <label for="tx-essential">Is this an essential expense?</label>
+                    <label for="tx-essential">Is this essential?</label>
                 </div>
             </div>
 
@@ -148,7 +147,7 @@
                     </div>
                     {% endfor %}
                 {% else %}
-                    <p style="text-align: center; color: #94a3b8; font-size: 0.9rem;">No transactions yet.</p>
+                    <p style="text-align: center; color: #94a3b8; font-size: 0.9rem;">No history available.</p>
                 {% endif %}
             </div>
 
@@ -157,34 +156,23 @@
                     <span class="ai-icon">✨</span>
                     <span class="ai-title" style="font-weight: 800; color: var(--accent-teal);">AI Insights</span>
                 </div>
-                <div class="ai-message">
-                    <p id="aiDynamicText" style="font-size: 0.9rem; color: #e2e8f0;">Analyzing your finances...</p>
-                </div>
+                <p id="aiDynamicText" style="font-size: 0.9rem; color: #e2e8f0;">Analyzing...</p>
             </div>
         </main>
 
         <nav class="bottom-nav">
-            <a href="/" class="nav-link active">
-                <i class="fas fa-home"></i> <span>Home</span>
-            </a>
-            <a href="/analytics" class="nav-link">
-                <i class="fas fa-chart-line"></i> <span>Stats</span>
-            </a>
-            <a href="/coach" class="nav-link">
-                <i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span>
-            </a>
-            <a href="/goals" class="nav-link">
-                <i class="fas fa-bullseye"></i> <span>Goals</span>
-            </a>
+            <a href="/" class="nav-link active"><i class="fas fa-home"></i> <span>Home</span></a>
+            <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i> <span>Stats</span></a>
+            <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span></a>
+            <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i> <span>Goals</span></a>
         </nav>
     </div>
 
     <script>
-    // --- FONCTION SCAN TICKET ---
+    // --- SCAN LOGIC ---
     async function processReceipt(input) {
         if (input.files && input.files[0]) {
-            showNotification("Scanning receipt with AI...", "fa-magnifying-glass-dollar");
-            
+            showNotification("Processing receipt...", "fa-list-check");
             let formData = new FormData();
             formData.append("file", input.files[0]);
 
@@ -193,94 +181,113 @@
                 const result = await response.json();
 
                 if (result.status === "success") {
-                    // Remplissage automatique des champs
                     document.getElementById('tx-merchant').value = result.data.merchant;
-                    document.getElementById('tx-amount').value = result.data.amount;
-                    if(result.data.category) document.getElementById('tx-category').value = result.data.category;
+                    document.getElementById('tx-amount').value = result.data.total;
                     
-                    showNotification("Scan complete! Verify the details.", "fa-check");
-                } else {
-                    showNotification("Scan failed: " + result.message, "fa-xmark");
+                    const container = document.getElementById('scanned-items-container');
+                    const list = document.getElementById('items-list');
+                    list.innerHTML = ""; 
+
+                    if (result.data.items && result.data.items.length > 0) {
+                        container.style.display = "block";
+                        document.getElementById('submit-btn').innerHTML = `<i class="fas fa-plus-circle"></i> Add All Items`;
+                        
+                        result.data.items.forEach(item => {
+                            const row = document.createElement('div');
+                            row.className = 'form-row item-row';
+                            row.innerHTML = `
+                                <input type="text" class="item-label" value="${item.label}" style="flex: 3; font-size: 0.75rem;">
+                                <input type="number" class="item-price" value="${item.price}" style="flex: 1; font-size: 0.75rem;">
+                                <button onclick="removeItem(this)" style="color:#EF4444; border:none; background:none;"><i class="fas fa-times"></i></button>
+                            `;
+                            list.appendChild(row);
+                        });
+                    }
+                    showNotification("Scan complete!", "fa-check");
                 }
-            } catch (e) {
-                showNotification("Server error during scan.", "fa-triangle-exclamation");
-            }
+            } catch (e) { showNotification("Scan error", "fa-xmark"); }
         }
     }
 
-    // --- MODIFIER LE BUDGET ---
-    async function editBudget() {
-        const newBudget = prompt("Set your new monthly budget limit (€):", "{{ budget }}");
-        if (newBudget !== null && newBudget !== "" && !isNaN(newBudget)) {
-            try {
-                const response = await fetch('/update-budget', {
+    function removeItem(btn) {
+        btn.parentElement.remove();
+        if (document.querySelectorAll('.item-row').length === 0) {
+            document.getElementById('scanned-items-container').style.display = "none";
+            document.getElementById('submit-btn').innerText = "Add";
+        }
+    }
+
+    // --- CRUD LOGIC ---
+    async function submitTransaction() {
+        const itemRows = document.querySelectorAll('.item-row');
+        const merchant = document.getElementById('tx-merchant').value;
+        const category = document.getElementById('tx-category').value;
+        const isEssential = document.getElementById('tx-essential').checked;
+
+        if (itemRows.length > 0) {
+            showNotification("Adding items...", "fa-spinner fa-spin");
+            const promises = Array.from(itemRows).map(row => {
+                const label = row.querySelector('.item-label').value;
+                const price = row.querySelector('.item-price').value;
+                return fetch('/add-transaction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ budget: parseFloat(newBudget) })
+                    body: JSON.stringify({
+                        merchant: `${merchant} (${label})`,
+                        amount: price,
+                        category: category,
+                        is_essential: isEssential
+                    })
                 });
-                const result = await response.json();
-                if (result.status === "success") {
-                    location.reload();
-                }
-            } catch (error) {
-                console.error("Error updating budget");
-            }
+            });
+            await Promise.all(promises);
+            location.reload();
+        } else {
+            const amount = document.getElementById('tx-amount').value;
+            if (!merchant || !amount) return;
+            const res = await fetch('/add-transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ merchant, amount, category, is_essential: isEssential })
+            });
+            if ((await res.json()).status === "success") location.reload();
         }
     }
 
-    // --- ENVOYER LA TRANSACTION ---
-    function submitTransaction() {
-        const data = {
-            merchant: document.getElementById('tx-merchant').value,
-            amount: document.getElementById('tx-amount').value,
-            category: document.getElementById('tx-category').value,
-            is_essential: document.getElementById('tx-essential').checked
-        };
-        if (!data.merchant || !data.amount) return;
-
-        fetch('/add-transaction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === "success") location.reload();
-        });
+    async function deleteTransaction(txId) {
+        if (!confirm("Delete transaction?")) return;
+        const res = await fetch(`/delete-transaction/${txId}`, { method: 'DELETE' });
+        if ((await res.json()).status === "success") location.reload();
     }
 
-    // --- SUPPRIMER UNE TRANSACTION ---
-    async function deleteTransaction(txId) {
-        if (!confirm("Delete this expense?")) return;
-        try {
-            const response = await fetch(`/delete-transaction/${txId}`, { method: 'DELETE' });
-            const result = await response.json();
-            if (result.status === "success") location.reload();
-        } catch (error) { console.error("Delete failed"); }
+    async function editBudget() {
+        const newBudget = prompt("Set new budget:", "{{ budget }}");
+        if (newBudget && !isNaN(newBudget)) {
+            const res = await fetch('/update-budget', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ budget: parseFloat(newBudget) })
+            });
+            if ((await res.json()).status === "success") location.reload();
+        }
     }
 
     function showNotification(message, icon = "fa-bell") {
         const container = document.getElementById('notification-container');
         const toast = document.createElement('div');
         toast.className = 'toast show';
-        toast.style.transform = "translateY(0)";
         toast.innerHTML = `<i class="fas ${icon}"></i><div class="toast-content"><p>${message}</p></div>`;
         container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = "0";
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
+        setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 500); }, 3000);
     }
 
     window.onload = () => {
-        const scoreVal = document.getElementById('scoreValue');
-        const score = scoreVal ? parseInt(scoreVal.innerText) : 0;
+        const score = parseInt(document.getElementById('scoreValue').innerText || 0);
         const ring = document.getElementById('serenityRing');
         const aiText = document.getElementById('aiDynamicText');
-        
-        if (score >= 80) { ring.style.borderColor = "#10B981"; aiText.innerHTML = "You're a financial master, Saleh! 🚀"; }
-        else if (score >= 50) { ring.style.borderColor = "#F59E0B"; aiText.innerHTML = "Budget is getting tight. Be careful."; }
-        else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Emergency! Check your spending now. ⚠️"; }
+        if (score >= 80) { ring.style.borderColor = "#10B981"; aiText.innerHTML = "Financial Master! 🚀"; }
+        else if (score >= 50) { ring.style.borderColor = "#F59E0B"; aiText.innerHTML = "Careful, budget is tight."; }
+        else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Emergency! Check spendings. ⚠️"; }
     };
     </script>
 </body>
