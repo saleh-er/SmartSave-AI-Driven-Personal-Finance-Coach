@@ -51,6 +51,21 @@
             flex: 1;
             outline: none;
         }
+
+        /* Style pour l'option de scan */
+        .scan-option {
+            text-align: center;
+            padding: 15px;
+            margin-top: -5px;
+            border: 2px dashed rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.03);
+            transition: 0.3s;
+        }
+        .scan-option:hover {
+            border-color: var(--accent-teal);
+            background: rgba(16, 185, 129, 0.08);
+        }
     </style>
 </head>
 <body>
@@ -87,6 +102,14 @@
 
             <div class="glass-card transaction-form">
                 <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Quick Add Expense 💸</h3>
+                
+                <div class="scan-option">
+                    <button onclick="document.getElementById('receipt-upload').click()" class="btn-add-tx" style="background: rgba(255,255,255,0.05); border: 1px solid var(--accent-teal); color: var(--accent-teal); width: auto; padding: 8px 15px; font-size: 0.85rem;">
+                        <i class="fas fa-camera"></i> Scan Receipt
+                    </button>
+                    <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(this)">
+                </div>
+
                 <div class="form-row">
                     <input type="text" id="tx-merchant" placeholder="Store/Merchant">
                     <input type="number" id="tx-amount" placeholder="Amount (€)">
@@ -157,6 +180,34 @@
     </div>
 
     <script>
+    // --- FONCTION SCAN TICKET ---
+    async function processReceipt(input) {
+        if (input.files && input.files[0]) {
+            showNotification("Scanning receipt with AI...", "fa-magnifying-glass-dollar");
+            
+            let formData = new FormData();
+            formData.append("file", input.files[0]);
+
+            try {
+                const response = await fetch('/scan-receipt', { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    // Remplissage automatique des champs
+                    document.getElementById('tx-merchant').value = result.data.merchant;
+                    document.getElementById('tx-amount').value = result.data.amount;
+                    if(result.data.category) document.getElementById('tx-category').value = result.data.category;
+                    
+                    showNotification("Scan complete! Verify the details.", "fa-check");
+                } else {
+                    showNotification("Scan failed: " + result.message, "fa-xmark");
+                }
+            } catch (e) {
+                showNotification("Server error during scan.", "fa-triangle-exclamation");
+            }
+        }
+    }
+
     // --- MODIFIER LE BUDGET ---
     async function editBudget() {
         const newBudget = prompt("Set your new monthly budget limit (€):", "{{ budget }}");
@@ -206,6 +257,19 @@
             const result = await response.json();
             if (result.status === "success") location.reload();
         } catch (error) { console.error("Delete failed"); }
+    }
+
+    function showNotification(message, icon = "fa-bell") {
+        const container = document.getElementById('notification-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        toast.style.transform = "translateY(0)";
+        toast.innerHTML = `<i class="fas ${icon}"></i><div class="toast-content"><p>${message}</p></div>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
     }
 
     window.onload = () => {

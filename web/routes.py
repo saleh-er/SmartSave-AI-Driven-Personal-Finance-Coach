@@ -6,6 +6,8 @@ from io import StringIO, BytesIO
 from pathlib import Path
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse
+from fastapi import File, UploadFile
+from services.ocr_engine import OCREngine
 from fpdf import FPDF
 # Fix pour les imports : on ajoute la racine du projet
 root_path = Path(__file__).parent.parent
@@ -78,7 +80,29 @@ async def update_budget(payload: dict = Body(...)):
             raise HTTPException(status_code=400, detail="Invalid number")
     raise HTTPException(status_code=400, detail="Missing budget data")
 
-
+# --- UPLOAD RECEIPT AND OCR PROCESSING ---
+@router.post("/scan-receipt")
+async def scan_receipt(file: UploadFile = File(...)):
+    try:
+        # 1. Read the image file sent from the browser
+        contents = await file.read()
+        
+        # 2. Call our OCR engine to extract data
+        # We pass the bytes directly to the engine
+        extracted_data = OCREngine.extract_data(contents)
+        
+        # 3. Return the result to the UI
+        return {
+            "status": "success",
+            "data": extracted_data
+        }
+        
+    except Exception as e:
+        # If something goes wrong (blurry image, etc.), return an error
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 # --- EXPORT CSV ---
 @router.get("/export-csv")
 async def export_csv(db: Session = Depends(get_db)):

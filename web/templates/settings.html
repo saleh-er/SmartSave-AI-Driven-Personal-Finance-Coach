@@ -26,7 +26,7 @@
             background: var(--primary-gradient);
             overflow: hidden;
         }
-        /* Small camera icon overlay */
+        /* Camera icon overlay for profile update */
         .upload-overlay {
             position: absolute;
             bottom: 0;
@@ -41,10 +41,10 @@
             font-size: 0.7rem;
             border: 1px solid var(--glass-border);
         }
-        /* Hidden file input for cleaner UI */
+        /* Hide default file input */
         #file-input { display: none; }
 
-        /* Custom styling for settings rows */
+        /* Row styling for preference items */
         .settings-row {
             display: flex;
             justify-content: space-between;
@@ -59,7 +59,7 @@
             width: 25px;
             color: var(--text-secondary);
         }
-        /* Subscription badge styling */
+        /* Badge for member status */
         .status-badge {
             background: rgba(16, 185, 129, 0.1);
             color: var(--accent-teal);
@@ -106,7 +106,7 @@
             
             <div class="settings-row">
                 <span><i class="fas fa-coins"></i> Currency</span>
-                <select style="background:transparent; color:white; border:1px solid var(--glass-border); padding:5px 10px; border-radius:8px;">
+                <select style="background:rgb(14, 24, 44); color:rgb(247, 247, 248); border:1px solid var(--glass-border); padding:5px 10px; border-radius:8px;">
                     <option value="EUR">EUR (€)</option>
                     <option value="USD">USD ($)</option>
                     <option value="GBP">GBP (£)</option>
@@ -127,14 +127,21 @@
         <div class="glass-card" style="margin-bottom: 110px; border: 1px solid rgba(239, 68, 68, 0.2);">
             <h3 style="color: #ef4444; margin-bottom: 12px; font-size: 1rem;"><i class="fas fa-shield-halved"></i> Privacy & Data</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
-                Export your transactions or reset all data stored on this device.
+                Download your transaction history or permanently wipe all data.
             </p>
-            <div style="display: flex; gap: 12px;">
-                <button class="action-btn secondary" style="flex:1; font-size: 0.85rem;" onclick="alert('Exporting data to CSV...')">
-                    <i class="fas fa-download"></i> Export CSV
-                </button>
-                <button onclick="confirmReset()" class="action-btn" style="flex:1; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
-                    Reset Data
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="location.href='/export-csv'" class="action-btn secondary" style="flex:1; font-size: 0.85rem;">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                    <button onclick="location.href='/export-pdf'" class="action-btn secondary" style="flex:1; font-size: 0.85rem;">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                </div>
+
+                <button onclick="confirmReset()" class="action-btn" style="width:100%; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); cursor: pointer;">
+                    <i class="fas fa-trash-can"></i> Reset All Data
                 </button>
             </div>
         </div>
@@ -148,7 +155,7 @@
     </div>
 
     <script>
-        // Load saved preferences from localStorage on initialization
+        // Load settings from local storage on startup
         window.onload = function() {
             const savedName = localStorage.getItem('profileName');
             const savedPhoto = localStorage.getItem('profilePhoto');
@@ -162,25 +169,25 @@
             }
         };
 
-        // Process image selection and trigger UI update
+        // Handle profile image file selection
         function previewImage(event) {
             const reader = new FileReader();
             reader.onload = function() {
                 const dataURL = reader.result;
                 updateAvatarUI(dataURL);
-                // Save base64 image string to browser's local storage
+                // Save image locally as base64 string
                 localStorage.setItem('profilePhoto', dataURL); 
             };
             reader.readAsDataURL(event.target.files[0]);
         }
 
-        // Render profile image in the preview container
+        // Apply profile image to the UI
         function updateAvatarUI(imageSrc) {
             const display = document.getElementById('profile-display');
             display.innerHTML = `<img src="${imageSrc}" style="width:100%; height:100%; object-fit:cover;">`;
         }
 
-        // Save name and profile changes locally
+        // Save username changes
         function saveChanges() {
             const name = document.getElementById('user-name').value;
             if (name.trim() === "") return alert("Name cannot be empty!");
@@ -190,19 +197,19 @@
             alert("Profile updated successfully! ✨");
         }
 
-        // Execute full database and local storage reset
+        // Trigger global data reset (Backend + Frontend)
         async function confirmReset() {
-            if (confirm("Are you sure? This will permanently delete all history and local settings.")) {
-                localStorage.clear(); // Wipe local profile data
+            if (confirm("DANGER: This will permanently delete all history and local settings. Continue?")) {
+                localStorage.clear(); // Clear local UI data
                 try {
                     const response = await fetch('/reset-data', { method: 'POST' });
                     const result = await response.json();
                     if (result.status === "success") {
-                        alert("Account wiped successfully!");
+                        alert("Account successfully wiped.");
                         window.location.href = "/";
                     }
                 } catch (error) {
-                    alert("Error communicating with server.");
+                    alert("Error reaching the server.");
                 }
             }
         }
