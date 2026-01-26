@@ -20,7 +20,7 @@ try:
     from models.models import Transaction, Goal
 except ImportError:
     from models import Transaction, Goal
-
+from services.budget_analyzer import BudgetAnalyzer
 from services.serenity_engine import SerenityEngine
 from api.open_ai_client import AICoach
 
@@ -122,6 +122,9 @@ async def reset_data(db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+from services.budget_analyzer import BudgetAnalyzer
+
+# route for chat with financial coach
 @router.post("/chat")
 async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_db)):
     user_msg = payload.get("message")
@@ -298,63 +301,74 @@ async def read_goals(request: Request, db: Session = Depends(get_db)):
         "goals": db_goals 
     })
 
-# Route pour la page des analyses
+# Route for analytics page
 
 @router.get("/analytics", response_class=HTMLResponse)
 async def read_analytics(request: Request, period: str = "week", db: Session = Depends(get_db)):
+    # Define the time limit based on period
     days_to_count = 7 if period == "week" else 30
     limit_date = datetime.now() - timedelta(days=days_to_count)
     
-    # 1. Récupération des transactions réelles
+    # 1. retrieve transactions from DB within the period
     db_tx = db.query(Transaction).filter(Transaction.date >= limit_date).all()
+    # Si la base est vide, on utilise les MOCK_TRANSACTIONS pour le visuel
     tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
     
     total_spent = sum(float(t.amount if hasattr(t, 'amount') else t['amount']) for t in tx_list)
 
-    # 2. Calcul des totaux par catégorie (Réel)
+    # 2. calculate category totals
     cat_totals = {}
     for t in tx_list:
         name = t.category if hasattr(t, 'category') else t['category']
         amt = float(t.amount if hasattr(t, 'amount') else t['amount'])
         cat_totals[name] = cat_totals.get(name, 0) + amt
 
-    # 3. Dictionnaire d'icônes pour le style
+    # 3. Define icons for categories
     icons = {
         "Food": "fa-utensils", "Transport": "fa-car", "Housing": "fa-house",
         "Shopping": "fa-bag-shopping", "Health": "fa-heart-pulse", 
-        "Entertainment": "fa-gamepad", "Bills": "fa-file-invoice-dollar"
+        "Entertainment": "fa-gamepad", "Bills": "fa-file-invoice-dollar",
+        "Fun": "fa-face-smile", "Subs": "fa-tv"
     }
 
-    # 4. Préparation des insights pour le HTML
+    # 4. Préparation des insights (Top Categories)
     category_insights = []
-    # On trie par montant décroissant pour voir les plus grosses dépenses en haut
     for name, amt in sorted(cat_totals.items(), key=lambda x: x[1], reverse=True):
         percentage = int((amt / total_spent * 100)) if total_spent > 0 else 0
-        
-        # Logique de couleur : Si une catégorie dépasse 30% du budget total, on met en rouge
-        is_high = percentage > 30
+        is_high = percentage > 30 # Alerte si > 30% des dépenses totales
         
         category_insights.append({
             "name": name,
             "amount": round(amt, 2),
             "percentage": percentage,
             "icon": icons.get(name, "fa-tag"),
-            "color": "#EF4444" if is_high else "#10B981",
+            "color": "#EF4444" if is_high else "#10B981", # Rouge si élevé, Vert sinon
             "status": "High Spending" if is_high else "On track"
         })
 
-    # 5. Données pour le graphique (Barres temporelles)
+    # 5. Logique des graphiques (Labels & Values)
     if period == "week":
         labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         values = [0.0] * 7
         for t in tx_list:
             dt = t.date if hasattr(t, 'date') else datetime.now()
+            # dt.weekday() donne 0 pour Lundi, 6 pour Dimanche
             values[dt.weekday()] += float(t.amount if hasattr(t, 'amount') else t['amount'])
     else:
+        # Mode mois : on découpe en 4 semaines
         labels = ["Week 1", "Week 2", "Week 3", "Week 4"]
         values = [0.0] * 4
-        # ... (logique des semaines identique) ...
+        now = datetime.now()
+        for t in tx_list:
+            dt = t.date if hasattr(t, 'date') else now
+            day_of_month = dt.day
+            # Attribution à une semaine (1-7, 8-14, 15-21, 22+)
+            if day_of_month <= 7: values[0] += float(t.amount)
+            elif day_of_month <= 14: values[1] += float(t.amount)
+            elif day_of_month <= 21: values[2] += float(t.amount)
+            else: values[3] += float(t.amount)
 
+    # 6. Envoi au template
     return templates.TemplateResponse("analytics.html", {
         "request": request,
         "total_spent": round(total_spent, 2),
@@ -363,7 +377,6 @@ async def read_analytics(request: Request, period: str = "week", db: Session = D
         "period": period,
         "category_insights": category_insights
     })
-
 @router.get("/coach", response_class=HTMLResponse)
 async def read_coach(request: Request):
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
