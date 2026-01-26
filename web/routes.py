@@ -101,7 +101,26 @@ async def read_home(request: Request, db: Session = Depends(get_db)):
         "transactions": db_tx, 
         "dynamic_alert": "ready to save " if not db_tx else None
     })
-
+#router for settings page
+@router.get("/settings", response_class=HTMLResponse)
+async def read_settings(request: Request):
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "budget": USER_CONFIG["monthly_budget"],
+        "name": "Saleh"
+    })
+#router for reset data
+@router.post("/reset-data")
+async def reset_data(db: Session = Depends(get_db)):
+    try:
+        # Supprime toutes les transactions et tous les objectifs
+        db.query(Transaction).delete()
+        db.query(Goal).delete()
+        db.commit()
+        return {"status": "success", "message": "All data cleared"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/chat")
 async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_db)):
