@@ -248,7 +248,8 @@ async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_d
         1. Be professional, motivating, and use emojis.
         2. Always refer to the user's real transactions if they ask about their spending.
         3. If the score is low, be protective and give urgent advice.
-        4. Answer in English.
+        4. DETECTION: Identify the language used by the user (Arabic,spanich, French, or English).
+        5. LANGUAGE: ALWAYS reply in the SAME language used by Saleh. If he speaks Arabic, you MUST reply in Arabic.
         """
     }
 
