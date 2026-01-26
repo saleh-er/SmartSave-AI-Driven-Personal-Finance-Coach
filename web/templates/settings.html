@@ -1,27 +1,96 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSave - Settings</title>
+    <title>SmartSave - Advanced Settings</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Profile picture upload styling */
+        .profile-upload-container {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            cursor: pointer;
+        }
+        .profile-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-teal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-gradient);
+            overflow: hidden;
+        }
+        /* Small camera icon overlay */
+        .upload-overlay {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--bg-dark);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            border: 1px solid var(--glass-border);
+        }
+        /* Hidden file input for cleaner UI */
+        #file-input { display: none; }
+
+        /* Custom styling for settings rows */
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .settings-row span {
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+        .settings-row i {
+            width: 25px;
+            color: var(--text-secondary);
+        }
+        /* Subscription badge styling */
+        .status-badge {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-teal);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
         <header class="brand-header">
             <h1>Settings</h1>
-            <p>Your preferences & account</p>
+            <p>Control your financial experience</p>
         </header>
 
-        <div class="glass-card" style="margin-bottom: 25px; padding: 25px;">
+        <div class="glass-card" style="margin-bottom: 20px; padding: 25px;">
+            <h3 style="font-size: 1rem; margin-bottom: 18px; color: var(--accent-teal);">Account Profile</h3>
             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: white;">
-                    S
+                <div class="profile-upload-container" onclick="document.getElementById('file-input').click()">
+                    <div class="profile-preview" id="profile-display">
+                        <span id="initials" style="font-size: 1.5rem; font-weight: 800; color: white;">S</span>
+                    </div>
+                    <div class="upload-overlay"><i class="fas fa-camera"></i></div>
                 </div>
+                <input type="file" id="file-input" accept="image/*" onchange="previewImage(event)">
+                
                 <div>
-                    <h2 style="margin: 0; font-size: 1.2rem;">Saleh</h2>
-                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Premium Member</p>
+                    <h2 id="display-name-preview" style="margin: 0; font-size: 1.2rem;">Saleh</h2>
+                    <span class="status-badge">PRO MEMBER</span>
                 </div>
             </div>
             
@@ -29,17 +98,45 @@
                 <label style="display:block; font-size:0.8rem; color:var(--text-secondary); margin-bottom:8px;">Display Name</label>
                 <input type="text" value="Saleh" id="user-name" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; padding:12px; border-radius:12px; outline:none;">
             </div>
-            <button class="action-btn primary" style="width:100%;">Save Changes</button>
+            <button onclick="saveChanges()" class="action-btn primary" style="width:100%; cursor: pointer;">Update Profile</button>
         </div>
 
-        <div class="glass-card" style="margin-bottom: 100px; border: 1px solid rgba(239, 68, 68, 0.2);">
-            <h3 style="color: #ef4444; margin-bottom: 10px;"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+        <div class="glass-card" style="margin-bottom: 20px; padding: 20px;">
+            <h3 style="font-size: 1rem; margin-bottom: 20px;">General Preferences</h3>
+            
+            <div class="settings-row">
+                <span><i class="fas fa-coins"></i> Currency</span>
+                <select style="background:transparent; color:white; border:1px solid var(--glass-border); padding:5px 10px; border-radius:8px;">
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="GBP">GBP (£)</option>
+                </select>
+            </div>
+
+            <div class="settings-row">
+                <span><i class="fas fa-bell"></i> Push Notifications</span>
+                <input type="checkbox" checked style="accent-color: var(--accent-teal); width:18px; height:18px;">
+            </div>
+
+            <div class="settings-row">
+                <span><i class="fas fa-brain"></i> AI Smart Alerts</span>
+                <input type="checkbox" checked style="accent-color: var(--accent-teal); width:18px; height:18px;">
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 110px; border: 1px solid rgba(239, 68, 68, 0.2);">
+            <h3 style="color: #ef4444; margin-bottom: 12px; font-size: 1rem;"><i class="fas fa-shield-halved"></i> Privacy & Data</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
-                Clearing your data will permanently remove all transactions and savings goals.
+                Export your transactions or reset all data stored on this device.
             </p>
-            <button onclick="confirmReset()" class="action-btn" style="width:100%; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
-                Reset All Data
-            </button>
+            <div style="display: flex; gap: 12px;">
+                <button class="action-btn secondary" style="flex:1; font-size: 0.85rem;" onclick="alert('Exporting data to CSV...')">
+                    <i class="fas fa-download"></i> Export CSV
+                </button>
+                <button onclick="confirmReset()" class="action-btn" style="flex:1; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    Reset Data
+                </button>
+            </div>
         </div>
 
         <nav class="bottom-nav">
@@ -51,13 +148,61 @@
     </div>
 
     <script>
+        // Load saved preferences from localStorage on initialization
+        window.onload = function() {
+            const savedName = localStorage.getItem('profileName');
+            const savedPhoto = localStorage.getItem('profilePhoto');
+            
+            if (savedName) {
+                document.getElementById('user-name').value = savedName;
+                document.getElementById('display-name-preview').innerText = savedName;
+            }
+            if (savedPhoto) {
+                updateAvatarUI(savedPhoto);
+            }
+        };
+
+        // Process image selection and trigger UI update
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                const dataURL = reader.result;
+                updateAvatarUI(dataURL);
+                // Save base64 image string to browser's local storage
+                localStorage.setItem('profilePhoto', dataURL); 
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        // Render profile image in the preview container
+        function updateAvatarUI(imageSrc) {
+            const display = document.getElementById('profile-display');
+            display.innerHTML = `<img src="${imageSrc}" style="width:100%; height:100%; object-fit:cover;">`;
+        }
+
+        // Save name and profile changes locally
+        function saveChanges() {
+            const name = document.getElementById('user-name').value;
+            if (name.trim() === "") return alert("Name cannot be empty!");
+            
+            localStorage.setItem('profileName', name);
+            document.getElementById('display-name-preview').innerText = name;
+            alert("Profile updated successfully! ✨");
+        }
+
+        // Execute full database and local storage reset
         async function confirmReset() {
-            if (confirm("Are you sure you want to delete everything? This cannot be undone.")) {
-                const response = await fetch('/reset-data', { method: 'POST' });
-                const result = await response.json();
-                if (result.status === "success") {
-                    alert("Data cleared successfully!");
-                    window.location.href = "/";
+            if (confirm("Are you sure? This will permanently delete all history and local settings.")) {
+                localStorage.clear(); // Wipe local profile data
+                try {
+                    const response = await fetch('/reset-data', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.status === "success") {
+                        alert("Account wiped successfully!");
+                        window.location.href = "/";
+                    }
+                } catch (error) {
+                    alert("Error communicating with server.");
                 }
             }
         }
