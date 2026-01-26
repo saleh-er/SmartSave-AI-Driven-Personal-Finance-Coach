@@ -1,9 +1,12 @@
+import csv
 import sys
 import os
 import json
+from io import StringIO, BytesIO
 from pathlib import Path
 from datetime import datetime, timedelta
-
+from fastapi.responses import StreamingResponse
+from fpdf import FPDF
 # Fix pour les imports : on ajoute la racine du projet
 root_path = Path(__file__).parent.parent
 if str(root_path) not in sys.path:
@@ -75,8 +78,73 @@ async def update_budget(payload: dict = Body(...)):
             raise HTTPException(status_code=400, detail="Invalid number")
     raise HTTPException(status_code=400, detail="Missing budget data")
 
-# Route pour la page d'accueil
 
+# --- EXPORT CSV ---
+@router.get("/export-csv")
+async def export_csv(db: Session = Depends(get_db)):
+    transactions = db.query(Transaction).all()
+    
+    # Create a string buffer to write CSV data
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow(['Date', 'Merchant', 'Category', 'Amount', 'Essential'])
+    
+    # Data rows
+    for tx in transactions:
+        writer.writerow([tx.date.strftime('%Y-%m-%d'), tx.merchant, tx.category, tx.amount, tx.is_essential])
+    
+    output.seek(0)
+    return StreamingResponse(
+        output, 
+        media_type="text/csv", 
+        headers={"Content-Disposition": "attachment; filename=smartsave_report.csv"}
+    )
+
+# --- EXPORT PDF ---
+@router.get("/export-pdf")
+async def export_pdf(db: Session = Depends(get_db)):
+    transactions = db.query(Transaction).all()
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Title
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt="SmartSave - Financial Report", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Table Header
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(40, 10, "Date", 1)
+    pdf.cell(60, 10, "Merchant", 1)
+    pdf.cell(40, 10, "Category", 1)
+    pdf.cell(40, 10, "Amount", 1)
+    pdf.ln()
+    
+    # Table Body
+    pdf.set_font("Arial", '', 12)
+    total = 0
+    for tx in transactions:
+        pdf.cell(40, 10, tx.date.strftime('%Y-%m-%d'), 1)
+        pdf.cell(60, 10, tx.merchant, 1)
+        pdf.cell(40, 10, tx.category, 1)
+        pdf.cell(40, 10, f"{tx.amount} EUR", 1)
+        pdf.ln()
+        total += tx.amount
+        
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, txt=f"TOTAL SPENT: {total} EUR", ln=True)
+    
+    # Return PDF as a stream
+    response = BytesIO(pdf.output(dest='S').encode('latin-1'))
+    return StreamingResponse(
+        response, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": "attachment; filename=smartsave_report.pdf"}
+    )
+# Route for home page
 @router.get("/", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
     db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
