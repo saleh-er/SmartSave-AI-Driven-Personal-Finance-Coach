@@ -1,298 +1,423 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>SmartSave - Home</title>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <link rel="stylesheet" href="/static/css/style.css">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+
     <style>
+
         @keyframes pulse-danger {
+
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+
             70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+
         }
+
         .pulse-active { animation: pulse-danger 2s infinite; }
+
         .ai-feed { cursor: pointer; transition: transform 0.2s; }
+
         .ai-feed:hover { transform: translateY(-3px); border-color: var(--accent-teal); }
 
+
+
         .btn-settings-top {
-            color: white; 
-            background: rgba(255, 255, 255, 0.05); 
-            width: 42px; 
-            height: 42px; 
-            border-radius: 12px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            text-decoration: none; 
+
+            color: white;
+
+            background: rgba(255, 255, 255, 0.05);
+
+            width: 42px;
+
+            height: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border: 1px solid rgba(255, 255, 255, 0.1);
+
+            text-decoration: none;
+
             transition: all 0.3s ease;
+
         }
+
+
 
         .transaction-form { margin-top: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+
         .form-row { display: flex; gap: 10px; margin-bottom: 5px; }
+
         .transaction-form input, .transaction-form select {
+
             background: rgba(255, 255, 255, 0.05);
+
             border: 1px solid rgba(255, 255, 255, 0.1);
+
             color: white;
+
             padding: 10px;
+
             border-radius: 8px;
+
             flex: 1;
+
             outline: none;
+
         }
+
+
 
         #scanned-items-container {
+
             max-height: 200px;
+
             overflow-y: auto;
+
             background: rgba(255, 255, 255, 0.02);
+
             border-radius: 10px;
+
             padding: 10px;
+
             margin-bottom: 10px;
+
             border: 1px solid rgba(16, 185, 129, 0.2);
+
         }
+
     </style>
+
 </head>
+
 <body>
+
     <div id="notification-container"></div>
+
     <div class="app-container">
+
         <header class="brand-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+
             <div>
+
                 <h1 class="logo">Smart<span>Save</span></h1>
+
                 <p class="tagline">Welcome back, Saleh ✨</p>
+
             </div>
+
             <a href="/settings" class="btn-settings-top"><i class="fas fa-cog"></i></a>
+
         </header>
 
+
+
         <main>
+
             <div class="score-container">
+
                 <div class="serenity-ring" id="serenityRing">
+
                     <div class="score-content">
+
                         <span class="score-number" id="scoreValue">{{ score|int if score else 0 }}</span>
+
                         <span class="score-text">Serenity Score</span>
+
                     </div>
+
                 </div>
+
             </div>
+
+
 
             <div class="glass-card balance-card" onclick="editBudget()" style="cursor: pointer; margin-bottom: 20px;">
+
                 <span class="card-label">Remaining (Limit: €{{ budget|int }})</span>
+
                 <h2 class="balance-amount">€{{ remaining }}</h2>
+
                 <p style="font-size: 0.75rem; color: var(--accent-teal); font-weight: 600; margin-top: 5px;">
+
                     <i class="fas fa-pen"></i> Tap to adjust
+
                 </p>
+
             </div>
+
+
 
             <div class="glass-card transaction-form">
+
                 <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Quick Add Expense 💸</h3>
-                
+
+               
+
                 <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()">
+
                     <div class="scan-icon-wrapper">
+
                         <i class="fas fa-expand"></i>
+
                     </div>
+
                     <div class="scan-text">
+
                         <h4>AI Smart Scanner</h4>
+
                         <p>Tap to take a photo or drop a receipt</p>
+
                     </div>
+
                     <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(this)">
+
                 </div>
+
+
 
                 <div id="scanned-items-container" style="display: none;">
+
                     <h4 style="font-size: 0.75rem; color: var(--accent-teal); margin-bottom: 8px;">DETECTED ITEMS</h4>
+
                     <div id="items-list"></div>
+
+                </div>
+
+
+
+                <div class="form-row">
+
+                    <input type="text" id="tx-merchant" placeholder="Store/Merchant">
+
+                    <input type="number" id="tx-amount" placeholder="Amount (€)">
+
                 </div>
 
                 <div class="form-row">
-                    <input type="text" id="tx-merchant" placeholder="Store/Merchant">
-                    <input type="number" id="tx-amount" placeholder="Amount (€)">
-                </div>
-                <div class="form-row">
+
                     <select id="tx-category">
+
                         <option value="Food">Food 🍔</option>
+
                         <option value="Transport">Transport 🚗</option>
+
                         <option value="Housing">Housing 🏠</option>
+
                         <option value="Subs">Subscriptions 📺</option>
+
                         <option value="Fun">Entertainment ✨</option>
+
                         <option value="Shopping">Shopping 🛍️</option>
+
                     </select>
+
                     <button id="submit-btn" onclick="submitTransaction()" class="btn-add-tx" style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">Add</button>
+
                 </div>
+
                 <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8;">
+
                     <input type="checkbox" id="tx-essential" checked>
+
                     <label for="tx-essential">Is this essential?</label>
+
                 </div>
+
             </div>
+
+
 
             <div class="glass-card tx-list-container" style="margin-top: 20px;">
+
                 <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Recent Transactions</h3>
+
                 {% if transactions %}
+
                     {% for tx in transactions %}
+
                     <div class="tx-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+
                         <div class="tx-info">
+
                             <p style="margin: 0; font-weight: 600;">{{ tx.merchant }}</p>
+
                             <span style="font-size: 0.75rem; color: #94a3b8;">{{ tx.category }}</span>
+
                         </div>
+
                         <div class="tx-amount-group" style="display: flex; align-items: center; gap: 15px;">
+
                             <span style="font-weight: 800;">€{{ tx.amount }}</span>
+
                             <button onclick="deleteTransaction({{ tx.id }})" style="color: #EF4444; background: none; border: none; cursor: pointer;">
+
                                 <i class="fas fa-trash-can"></i>
+
                             </button>
+
                         </div>
+
                     </div>
+
                     {% endfor %}
+
                 {% else %}
+
                     <p style="text-align: center; color: #94a3b8; font-size: 0.9rem;">No history available.</p>
+
                 {% endif %}
+
             </div>
+
+
 
             <div class="glass-card ai-feed" onclick="window.location.href='/coach'" style="margin-bottom: 120px; margin-top: 20px;">
+
                 <div class="ai-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+
                     <span class="ai-icon">✨</span>
+
                     <span class="ai-title" style="font-weight: 800; color: var(--accent-teal);">AI Insights</span>
+
                 </div>
+
                 <p id="aiDynamicText" style="font-size: 0.9rem; color: #e2e8f0;">Analyzing...</p>
+
             </div>
+
         </main>
 
+
+
         <nav class="bottom-nav">
+
             <a href="/" class="nav-link active"><i class="fas fa-home"></i> <span>Home</span></a>
+
             <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i> <span>Stats</span></a>
+
             <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span></a>
+
             <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i> <span>Goals</span></a>
+
         </nav>
+
     </div>
 
+
+
     <script>
+
     // --- SCAN LOGIC WITH ANIMATION ---
+
     async function processReceipt(input) {
+
         if (input.files && input.files[0]) {
+
             const dropZone = document.getElementById('drop-zone');
-            
+
+           
+
             // Start Animation
+
             dropZone.classList.add('processing');
+
             showNotification("AI is analyzing your items...", "fa-expand");
-            
+
+           
+
             let formData = new FormData();
+
             formData.append("file", input.files[0]);
 
+
+
             try {
+
                 const response = await fetch('/scan-receipt', { method: 'POST', body: formData });
+
                 const result = await response.json();
 
+
+
                 if (result.status === "success") {
+
                     document.getElementById('tx-merchant').value = result.data.merchant;
+
                     document.getElementById('tx-amount').value = result.data.total;
-                    
+
+                   
+
                     const container = document.getElementById('scanned-items-container');
+
                     const list = document.getElementById('items-list');
-                    list.innerHTML = ""; 
+
+                    list.innerHTML = "";
+
+
 
                     if (result.data.items && result.data.items.length > 0) {
+
                         container.style.display = "block";
+
                         document.getElementById('submit-btn').innerHTML = `<i class="fas fa-plus-circle"></i> Add All Items`;
-                        
+
+                       
+
                         result.data.items.forEach(item => {
+
                             const row = document.createElement('div');
+
                             row.className = 'form-row item-row';
+
                             row.innerHTML = `
+
                                 <input type="text" class="item-label" value="${item.label}" style="flex: 3; font-size: 0.75rem;">
+
                                 <input type="number" class="item-price" value="${item.price}" style="flex: 1; font-size: 0.75rem;">
+
                                 <button onclick="removeItem(this)" style="color:#EF4444; border:none; background:none;"><i class="fas fa-times"></i></button>
+
                             `;
+
                             list.appendChild(row);
+
                         });
+
                     }
+
                     showNotification("Analysis complete!", "fa-check");
+
                 }
-            } catch (e) { 
-                showNotification("Scan error", "fa-xmark"); 
+
+            } catch (e) {
+
+                showNotification("Scan error", "fa-xmark");
+
             } finally {
+
                 // Stop Animation regardless of result
+
                 dropZone.classList.remove('processing');
+
             }
-        }
-    }
-
-    function removeItem(btn) {
-        btn.parentElement.remove();
-        if (document.querySelectorAll('.item-row').length === 0) {
-            document.getElementById('scanned-items-container').style.display = "none";
-            document.getElementById('submit-btn').innerText = "Add";
-        }
-    }
-
-    // --- CRUD LOGIC ---
-    async function submitTransaction() {
-        const itemRows = document.querySelectorAll('.item-row');
-        const merchant = document.getElementById('tx-merchant').value;
-        const category = document.getElementById('tx-category').value;
-        const isEssential = document.getElementById('tx-essential').checked;
-
-        if (itemRows.length > 0) {
-            showNotification("Saving items...", "fa-spinner fa-spin");
-            const promises = Array.from(itemRows).map(row => {
-                const label = row.querySelector('.item-label').value;
-                const price = row.querySelector('.item-price').value;
-                return fetch('/add-transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        merchant: `${merchant} (${label})`,
-                        amount: price,
-                        category: category,
-                        is_essential: isEssential
-                    })
-                });
-            });
-            await Promise.all(promises);
-            location.reload();
-        } else {
-            const amount = document.getElementById('tx-amount').value;
-            if (!merchant || !amount) return;
-            const res = await fetch('/add-transaction', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ merchant, amount, category, is_essential: isEssential })
-            });
-            if ((await res.json()).status === "success") location.reload();
-        }
-    }
-
-    async function deleteTransaction(txId) {
-        if (!confirm("Delete transaction?")) return;
-        const res = await fetch(`/delete-transaction/${txId}`, { method: 'DELETE' });
-        if ((await res.json()).status === "success") location.reload();
-    }
-
-    async function editBudget() {
-        const newBudget = prompt("Set new budget:", "{{ budget }}");
-        if (newBudget && !isNaN(newBudget)) {
-            const res = await fetch('/update-budget', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ budget: parseFloat(newBudget) })
-            });
-            if ((await res.json()).status === "success") location.reload();
-        }
-    }
-
-    function showNotification(message, icon = "fa-bell") {
-        const container = document.getElementById('notification-container');
-        const toast = document.createElement('div');
-        toast.className = 'toast show';
-        toast.innerHTML = `<i class="fas ${icon}"></i><div class="toast-content"><p>${message}</p></div>`;
-        container.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 500); }, 3000);
-    }
-
-    window.onload = () => {
-        const score = parseInt(document.getElementById('scoreValue').innerText || 0);
-        const ring = document.getElementById('serenityRing');
-        const aiText = document.getElementById('aiDynamicText');
-        if (score >= 80) { ring.style.borderColor = "#10B981"; aiText.innerHTML = "Financial Master! 🚀"; }
-        else if (score >= 50) { ring.style.borderColor = "#F59E0B"; aiText.innerHTML = "Careful, budget is tight."; }
-        else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Emergency! Check spendings. ⚠️"; }
-    };
-    </script>
-</body>
-</html>
