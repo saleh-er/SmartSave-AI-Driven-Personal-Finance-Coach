@@ -126,7 +126,7 @@ async def export_csv(db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=smartsave_report.csv"}
     )
 
-# --- EXPORT PDF ---
+# --- EXPORT PDF CORRIGÉ ---
 @router.get("/export-pdf")
 async def export_pdf(db: Session = Depends(get_db)):
     transactions = db.query(Transaction).all()
@@ -134,7 +134,7 @@ async def export_pdf(db: Session = Depends(get_db)):
     pdf.add_page()
     
     # Title
-    pdf.set_font("Arial", 'B', 16)
+    pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt="SmartSave - Financial Report", ln=True, align='C')
     pdf.ln(10)
     
@@ -147,12 +147,17 @@ async def export_pdf(db: Session = Depends(get_db)):
     pdf.ln()
     
     # Table Body
-    pdf.set_font("Arial", '', 12)
+    pdf.set_font("Arial", '', 10) # Taille légèrement réduite pour le contenu
     total = 0
     for tx in transactions:
-        pdf.cell(40, 10, tx.date.strftime('%Y-%m-%d'), 1)
-        pdf.cell(60, 10, tx.merchant, 1)
-        pdf.cell(40, 10, tx.category, 1)
+        # LA CORRECTION : Nettoyage des chaînes pour supprimer les emojis/caractères non-latin1
+        merchant_clean = tx.merchant.encode('latin-1', 'ignore').decode('latin-1')
+        category_clean = tx.category.encode('latin-1', 'ignore').decode('latin-1')
+        date_str = tx.date.strftime('%Y-%m-%d')
+        
+        pdf.cell(40, 10, date_str, 1)
+        pdf.cell(60, 10, merchant_clean, 1)
+        pdf.cell(40, 10, category_clean, 1)
         pdf.cell(40, 10, f"{tx.amount} EUR", 1)
         pdf.ln()
         total += tx.amount
@@ -161,10 +166,16 @@ async def export_pdf(db: Session = Depends(get_db)):
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(200, 10, txt=f"TOTAL SPENT: {total} EUR", ln=True)
     
-    # Return PDF as a stream
-    response = BytesIO(pdf.output(dest='S').encode('latin-1'))
+    # On récupère le contenu brut et on utilise BytesIO directement
+    pdf_output = pdf.output(dest='S')
+    
+    # Si tu utilises fpdf2, pdf.output() renvoie déjà des bytes, 
+    # si c'est l'ancien fpdf, il faut l'encoder prudemment
+    if isinstance(pdf_output, str):
+        pdf_output = pdf_output.encode('latin-1')
+        
     return StreamingResponse(
-        response, 
+        BytesIO(pdf_output), 
         media_type="application/pdf", 
         headers={"Content-Disposition": "attachment; filename=smartsave_report.pdf"}
     )
