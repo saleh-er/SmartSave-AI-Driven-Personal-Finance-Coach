@@ -544,7 +544,7 @@ async def delete_card(card_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
     
 
-    
+
 #route for adding a transaction with card logic
 @router.post("/add-transaction")
 async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -578,3 +578,20 @@ async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_d
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error adding transaction: {str(e)}")
+    
+    #scan card
+@router.post("/scan-card")
+async def scan_card(file: UploadFile = File(...)):
+    # 1. Lecture du fichier
+    contents = await file.read()
+    
+    # 2. Ton IA doit analyser 'contents' ici pour extraire les vraies infos
+    # Pour l'instant, on prépare la structure de retour
+    ai_extracted_data = {
+        "bank_name": "Detected Bank", # Sera remplacé par l'IA
+        "last_four": "0000",          # Sera remplacé par l'IA
+        "holder": "Saleh",            # Sera remplacé par l'IA
+        "expiry": "MM/YY"             # Sera remplacé par l'IA
+    }
+    
+    return {"status": "success", "data": ai_extracted_data}

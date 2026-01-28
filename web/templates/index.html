@@ -160,7 +160,23 @@
                     <button onclick="deleteSelectedCard()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; color: #EF4444; width: 42px; border-radius: 8px; cursor: pointer;">
                         <i class="fas fa-trash-alt"></i>
                     </button>
+
+
+
                 </div>
+                   <div class="scan-container" id="card-scan-zone" onclick="document.getElementById('card-upload').click()" style="margin-bottom: 20px; border: 2px dashed var(--accent-teal);">
+                    <div class="scan-icon-wrapper" style="background: var(--primary-gradient);">
+                     <i class="fas fa-credit-card"></i>
+                  </div>
+                  <div class="scan-text">
+                     <h4>Scan Your Card</h4>
+                    <p>Tap to capture card details via AI</p>
+                   </div>
+                  <input type="file" id="card-upload" accept="image/*" capture="environment" style="display: none;" onchange="processCardScan(this)">
+                   </div>
+
+
+
 
                 <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()" style="margin: 15px 0;">
                     <div class="scan-icon-wrapper"><i class="fas fa-expand"></i></div>
@@ -398,6 +414,33 @@
         const response = await fetch(`/delete-card/${cardId}`, { method: 'DELETE' });
         if ((await response.json()).status === "success") location.reload();
     }
+
+
+    async function processCardScan(input) {
+    if (input.files && input.files[0]) {
+        showNotification("AI is reading card details...", "fa-brands fa-ai");
+        
+        let formData = new FormData();
+        formData.append("file", input.files[0]);
+
+        try {
+            const response = await fetch('/scan-card', { method: 'POST', body: formData });
+            const result = await response.json();
+
+            if (result.status === "success") {
+                // Remplissage automatique des champs
+                document.getElementById('card-bank').value = result.data.bank_name || "";
+                document.getElementById('card-last-four').value = result.data.last_four || "";
+                document.getElementById('card-expiry').value = result.data.expiry || "";
+                document.getElementById('card-holder').value = result.data.holder || "";
+                
+                showNotification("Card scanned successfully!", "fa-check");
+            }
+        } catch (e) {
+            showNotification("Scan failed", "fa-xmark");
+        }
+    }
+}
     </script>
 </body>
 </html>
