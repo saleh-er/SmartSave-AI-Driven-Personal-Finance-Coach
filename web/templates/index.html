@@ -52,9 +52,60 @@
             margin-bottom: 10px;
             border: 1px solid rgba(16, 185, 129, 0.2);
         }
+        /* NOUVEAUX STYLES POUR LES CARTES */
+        .cards-slider { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .cards-slider::-webkit-scrollbar { display: none; }
+        
+        .bank-card-visual {
+            min-width: 280px; height: 170px; border-radius: 20px; padding: 20px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);
+        }
+        .theme-purple { background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(30, 41, 59, 0.8)); }
+        .theme-teal { background: linear-gradient(135deg, rgba(20, 184, 166, 0.4), rgba(30, 41, 59, 0.8)); }
+        
+        .card-number-display { font-family: 'Courier New', monospace; letter-spacing: 2px; font-size: 1.2rem; margin: 15px 0; }
+        
+        /* STYLE DU MODAL */
+        #card-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1000; width: 90%; max-width: 400px; padding: 25px;
+        }
+        #modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 999;
+        }
     </style>
 </head>
 <body>
+    <div id="notification-container"></div>
+    
+    <div id="modal-overlay" onclick="closeCardModal()"></div>
+    <div id="card-modal" class="glass-card">
+        <h3 style="margin-bottom:20px;">Add New Bank Card 💳</h3>
+        <div class="transaction-form" style="padding:0; background:none;">
+            <input type="text" id="card-bank" placeholder="Bank Name (ex: Revolut)">
+            <input type="text" id="card-holder" placeholder="Card Holder Name">
+            <div class="form-row">
+                <input type="text" id="card-last-four" placeholder="Last 4 Digits" maxlength="4">
+                <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5">
+            </div>
+            <div class="form-row">
+                <select id="card-type">
+                    <option value="visa">Visa</option>
+                    <option value="mastercard">Mastercard</option>
+                </select>
+                <select id="card-color">
+                    <option value="purple">Neon Purple</option>
+                    <option value="teal">Emerald Teal</option>
+                </select>
+            </div>
+            <div class="form-row" style="margin-top:15px;">
+                <button onclick="closeCardModal()" style="background:rgba(239,68,68,0.2); color:#EF4444; border:none; padding:10px; border-radius:8px; flex:1;">Cancel</button>
+                <button onclick="submitNewCard()" style="background:var(--primary-gradient); color:white; border:none; padding:10px; border-radius:8px; flex:2; font-weight:bold;">Save Card</button>
+            </div>
+        </div>
+    </div>
     <div id="notification-container"></div>
     <div class="app-container">
         <header class="brand-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
@@ -78,6 +129,33 @@
                     <div class="glass-reflection"></div>
                 </div>
             </div>
+            <section style="margin-bottom: 25px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 800;">My Wallet 💳</h3>
+                    <button onclick="openCardModal()" style="background:none; border:none; color:var(--accent-teal); font-size:0.8rem; font-weight:700; cursor:pointer;">+ NEW CARD</button>
+                </div>
+                <div class="cards-slider">
+                    {% if cards %}
+                        {% for card in cards %}
+                        <div class="bank-card-visual theme-{{ card.color_scheme }}">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="width:35px; height:25px; background:rgba(255,215,0,0.8); border-radius:4px;"></div>
+                                <i class="fab fa-cc-{{ card.card_type }} fa-2x" style="opacity: 0.9;"></i>
+                            </div>
+                            <div class="card-number-display">•••• •••• •••• {{ card.last_four }}</div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">
+                                <span>{{ card.card_holder }}</span>
+                                <span>{{ card.expiry_date }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="glass-card" style="width:100%; padding:20px; text-align:center; border:1px dashed rgba(255,255,255,0.2);">
+                            <p style="font-size:0.8rem; color:#94a3b8;">No cards linked. Tap + to add your first card.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
 
             <div class="glass-card balance-card" onclick="editBudget()" style="cursor: pointer; margin-bottom: 20px;">
                 <span class="card-label">Remaining (Limit: €{{ budget|int }})</span>
@@ -221,7 +299,7 @@
             document.getElementById('submit-btn').innerText = "Add";
         }
     }
-
+     
     // --- LOGIQUE CRUD ---
     async function submitTransaction() {
         const itemRows = document.querySelectorAll('.item-row');
@@ -285,6 +363,46 @@
         container.appendChild(toast);
         setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 500); }, 3000);
     }
+     // -- wallet functions --
+  
+     function openCardModal() {
+        document.getElementById('card-modal').style.display = 'block';
+        document.getElementById('modal-overlay').style.display = 'block';
+    }
+
+    function closeCardModal() {
+        document.getElementById('card-modal').style.display = 'none';
+        document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    async function submitNewCard() {
+        const cardData = {
+            bank_name: document.getElementById('card-bank').value,
+            last_four: document.getElementById('card-last-four').value,
+            card_holder: document.getElementById('card-holder').value,
+            card_type: document.getElementById('card-type').value,
+            expiry_date: document.getElementById('card-expiry').value,
+            color_scheme: document.getElementById('card-color').value
+        };
+
+        if(!cardData.bank_name || !cardData.last_four) return alert("Please fill important fields");
+
+        try {
+            const response = await fetch('/add-card', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cardData)
+            });
+            const result = await response.json();
+            if (result.status === "success") {
+                showNotification("Card added! ✨", "fa-check");
+                location.reload();
+            }
+        } catch (e) {
+            showNotification("Error adding card", "fa-xmark");
+        }
+    }
+
 
     window.onload = () => {
         const score = parseInt(document.getElementById('scoreValue').innerText || 0);
