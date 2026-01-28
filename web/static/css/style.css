@@ -1,819 +1,273 @@
 /* --- CONFIGURATION GLOBALE --- */
 
 :root {
-
     --bg-dark: #0B1120;
-
     --glass-bg: rgba(30, 41, 59, 0.6);
-
     --glass-border: rgba(255, 255, 255, 0.1);
-
     --primary-gradient: linear-gradient(135deg, #6366F1 0%, #10B981 100%);
-
     --accent-teal: #10B981;
-
     --text-main: #FFFFFF;
-
     --text-secondary: #94A3B8;
-
 }
-
-
 
 body {
-
     background-color: var(--bg-dark);
-
     color: var(--text-main);
-
     font-family: 'Inter', -apple-system, sans-serif;
-
     margin: 0;
-
     display: flex;
-
-    justify-content: center;
-
+    flex-direction: column; /* Force l'empilement vertical */
+    align-items: center;    /* Centre le contenu horizontalement */
     min-height: 100vh;
-
 }
-
-
 
 .app-container {
-
     width: 100%;
-
-    max-width: 400px;
-
+    max-width: 450px;       /* Largeur optimale pour une page unique */
     padding: 20px;
-
     padding-bottom: 120px;
-
+    display: flex;          /* Force les enfants (main, header) */
+    flex-direction: column; /* à s'empiler verticalement */
+    gap: 10px;
 }
-
-
 
 /* --- HEADER --- */
-
 .brand-header {
-
     margin-bottom: 30px;
-
+    width: 100%;
 }
-
-
 
 .logo { font-size: 2.2rem; font-weight: 800; margin: 0; }
-
 .logo span { color: var(--accent-teal); }
-
 .tagline { color: var(--text-secondary); font-size: 0.9rem; margin-top: 5px; }
 
-
-
-/* --- AI SCANNER (NOUVEAU DESIGN) --- */
-
+/* --- AI SCANNER --- */
 .scan-container {
-
     background: rgba(16, 185, 129, 0.05);
-
     border: 2px dashed rgba(16, 185, 129, 0.2);
-
     border-radius: 24px;
-
     padding: 25px;
-
     text-align: center;
-
     cursor: pointer;
-
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
     position: relative;
-
     overflow: hidden;
-
     margin-bottom: 15px;
-
 }
-
-
 
 .scan-container:hover {
-
     background: rgba(16, 185, 129, 0.1);
-
     border-color: var(--accent-teal);
-
     transform: translateY(-2px);
-
 }
-
-
 
 .scan-icon-wrapper {
-
     width: 50px;
-
     height: 50px;
-
     background: var(--primary-gradient);
-
     border-radius: 15px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     margin: 0 auto 12px;
-
     box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
-
 }
-
-
 
 .scan-text h4 { font-size: 0.95rem; margin: 0; font-weight: 700; }
-
 .scan-text p { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 0; }
 
-
-
-/* Animation Laser */
-
-.scan-container::after {
-
-    content: '';
-
-    position: absolute;
-
-    top: -100%;
-
-    left: 0;
-
-    width: 100%;
-
-    height: 3px;
-
-    background: linear-gradient(90deg, transparent, var(--accent-teal), transparent);
-
-    opacity: 0;
-
-}
-
-
-
-.scan-container.processing::after {
-
-    opacity: 1;
-
-    animation: scan-line 2s linear infinite;
-
-}
-
-
-
 @keyframes scan-line {
-
     0% { top: 0%; }
-
     100% { top: 100%; }
-
 }
 
-
-
-.serenity-ring {
-
-    width: 220px;          /* Largeur fixe */
-
-    height: 220px;         /* Hauteur fixe */
-
-    flex-shrink: 0;        /* EMPÊCHE L'ÉCRASEMENT SUR PC */
-
-    aspect-ratio: 1 / 1;   /* Force le ratio carré */
-
-    border-radius: 50%;    /* Rend le carré parfaitement rond */
-
-   
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    margin: 0 auto;        /* Centre le cercle sur la page */
-
-   
-
-    position: relative;
-
-    background: var(--bg-dark);
-
-    border: 4px solid transparent;
-
-    background-image: linear-gradient(var(--bg-dark), var(--bg-dark)), var(--primary-gradient);
-
-    background-origin: border-box;
-
-    background-clip: content-box, border-box;
-
-    box-shadow: 0 0 50px rgba(99, 102, 241, 0.2);
-
-}
-
-/* --- FORMULAIRE & ITEMS SCANNNÉS --- */
-
-.transaction-form {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 12px;
-
-}
-
-
-
-#scanned-items-container {
-
-    max-height: 220px;
-
-    overflow-y: auto;
-
-    background: rgba(0, 0, 0, 0.2);
-
-    border-radius: 18px;
-
-    padding: 12px;
-
-    border: 1px solid var(--glass-border);
-
-    margin-bottom: 10px;
-
-}
-
-
-
-.item-row {
-
-    display: flex;
-
-    gap: 8px;
-
-    margin-bottom: 8px;
-
-    animation: slideIn 0.3s ease-out;
-
-}
-
-
-
-@keyframes slideIn {
-
-    from { opacity: 0; transform: translateX(-10px); }
-
-    to { opacity: 1; transform: translateX(0); }
-
-}
-
-
-
-.item-row input {
-
-    background: rgba(255, 255, 255, 0.05) !important;
-
-    font-size: 0.8rem !important;
-
-    padding: 8px !important;
-
-}
-
-
-
-/* --- NAVIGATION (GÉLULE PREMIUM) --- */
-
-.bottom-nav {
-
-    position: fixed;
-
-    bottom: 25px;
-
-    left: 20px;
-
-    right: 20px;
-
-    max-width: 400px;
-
-    margin: 0 auto;
-
-    background: #0F172A;
-
-    border-radius: 50px;
-
-    display: flex;
-
-    padding: 8px;
-
-    border: 1px solid var(--glass-border);
-
-    z-index: 1000;
-
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-
-}
-
-
-
-.nav-link {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    text-decoration: none;
-
-    color: #64748B;
-
-    padding: 12px;
-
-    border-radius: 40px;
-
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-    flex: 1;
-
-}
-
-
-
-.nav-link.active {
-
-    flex: 3;
-
-    background: var(--primary-gradient);
-
-    color: white;
-
-    gap: 12px;
-
-    border: 2px solid rgba(255, 255, 255, 0.8);
-
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-
-}
-
-
-
-.nav-link span { display: none; font-weight: 800; }
-
-.nav-link.active span { display: inline; }
-
-
-
-/* --- CARDS & MISC --- */
-
-.glass-card {
-
-    background: var(--glass-bg);
-
-    backdrop-filter: blur(12px);
-
-    -webkit-backdrop-filter: blur(12px);
-
-    border: 1px solid var(--glass-border);
-
-    border-radius: 28px;
-
-    padding: 24px;
-
-    margin-bottom: 20px;
-
-}
-
-
-
-.action-btn.primary {
-
-    background: var(--primary-gradient);
-
-    color: white;
-
-    border: none;
-
-    padding: 15px;
-
-    border-radius: 15px;
-
-    font-weight: 700;
-
-    cursor: pointer;
-
-    width: 100%;
-
-    transition: 0.3s;
-
-}
-
-
-
-.action-btn.primary:active { transform: scale(0.98); }
-
-
-
-/* --- NOTIFICATIONS --- */
-
-#notification-container {
-
-    position: fixed;
-
-    top: 20px;
-
-    left: 20px;
-
-    right: 20px;
-
-    z-index: 2000;
-
-}
-
-
-
-.toast {
-
-    background: rgba(15, 23, 42, 0.95);
-
-    backdrop-filter: blur(15px);
-
-    border-left: 4px solid var(--accent-teal);
-
-    border-radius: 12px;
-
-    padding: 15px;
-
-    color: white;
-
-    margin-bottom: 10px;
-
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-}
-
-
-
-/* --- COACH ADDITIONS (WhatsApp Style) --- */
-
-.chat-container {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 15px;
-
-    padding: 20px;
-
-    padding-bottom: 180px; /* Space for input and nav */
-
-    overflow-y: auto;
-
-    height: calc(100vh - 100px);
-
-}
-
-
-
-.message {
-
-    max-width: 80%;
-
-    padding: 12px 16px;
-
-    border-radius: 20px;
-
-    position: relative;
-
-    line-height: 1.4;
-
-    font-size: 0.95rem;
-
-}
-
-
-
-.user-message {
-
-    align-self: flex-end;
-
-    background: var(--primary-gradient);
-
-    color: white;
-
-    border-bottom-right-radius: 4px;
-
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
-
-}
-
-
-
-.ai-message {
-
-    align-self: flex-start;
-
-    background: var(--glass-bg);
-
-    border: 1px solid var(--glass-border);
-
-    color: white;
-
-    border-bottom-left-radius: 4px;
-
-    backdrop-filter: blur(10px);
-
-}
-
-
-
-.chat-input-area {
-
-    position: fixed;
-
-    bottom: 100px;
-
-    left: 20px;
-
-    right: 20px;
-
-    max-width: 360px;
-
-    margin: 0 auto;
-
-    z-index: 1001;
-
-}
-
-
-
-.input-wrapper {
-
-    background: rgba(30, 41, 59, 0.95);
-
-    backdrop-filter: blur(15px);
-
-    border: 1px solid var(--glass-border);
-
-    border-radius: 30px;
-
-    padding: 6px 6px 6px 18px;
-
-    display: flex;
-
-    align-items: center;
-
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-
-}
-
-
-
-.input-wrapper input {
-
-    background: transparent;
-
-    border: none;
-
-    color: white;
-
-    flex: 1;
-
-    outline: none;
-
-    font-size: 0.95rem;
-
-    padding: 10px 0;
-
-}
-
-
-
-.send-btn {
-
-    background: var(--primary-gradient);
-
-    border: none;
-
-    width: 42px;
-
-    height: 42px;
-
-    border-radius: 50%;
-
-    color: white;
-
-    cursor: pointer;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-}
-
-
-
-/* --- serenity ring animation --- */
-
-/* --- SERENITY RING - DESIGN LUXE --- */
-
+/* --- SERENITY RING --- */
 .score-container {
-
     display: flex;
-
-    justify-content: center;
-
-    margin: 40px 0;
-
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
     perspective: 1000px;
-
+    width: 100%;
 }
-
-
 
 .glass-sphere {
-
     position: relative;
-
-    width: 280px; /* Taille imposante */
-
-    height: 280px;
-
+    width: 260px; 
+    height: 260px;
     background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.08), transparent);
-
     border-radius: 50%;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     border: 1px solid rgba(255, 255, 255, 0.1);
-
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-
 }
-
-
 
 .serenity-ring {
-
-    width: 230px;
-
-    height: 230px;
-
-    flex-shrink: 0; /* Important pour garder le rond sur PC */
-
+    width: 210px;
+    height: 210px;
+    flex-shrink: 0;
     border-radius: 50%;
-
     display: flex;
-
+    flex-direction: column;
     align-items: center;
-
     justify-content: center;
-
     position: relative;
-
     background: #0B1120;
-
-   
-
-    /* Double anneau lumineux */
-
     border: 4px solid transparent;
-
-    background-image: linear-gradient(#0B1120, #0B1120),
-
-                      conic-gradient(from 0deg, #10B981, #6366F1, #10B981);
-
+    background-image: linear-gradient(#0B1120, #0B1120), conic-gradient(from 0deg, #10B981, #6366F1, #10B981);
     background-origin: border-box;
-
     background-clip: content-box, border-box;
-
     box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
-
 }
-
-
 
 .score-number {
-
     display: block;
-
-    font-size: 6.5rem; /* NOMBRE TRÈS GRAND */
-
+    font-size: 5.5rem;
     font-weight: 900;
-
     letter-spacing: -3px;
-
     background: linear-gradient(to bottom, #FFFFFF, #94A3B8);
-
     -webkit-background-clip: text;
-
     -webkit-text-fill-color: transparent;
-
     line-height: 1;
-
 }
-
-
 
 .score-text {
-
     color: #94A3B8;
-
-    font-size: 0.8rem;
-
+    font-size: 0.7rem;
     text-transform: uppercase;
-
-    letter-spacing: 3px;
-
+    letter-spacing: 2px;
     font-weight: 700;
-
-    margin-top: 5px;
-
-}
-/* Animation de scan */
-.scan-container.processing {
-    border-color: var(--accent-teal);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
 }
 
-.scan-container.processing::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 3px;
-    background: var(--accent-teal);
-    animation: scan-move 2s infinite;
+/* --- FORMULAIRE & ITEMS --- */
+.transaction-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-@keyframes scan-move {
-    0% { top: 0%; }
-    100% { top: 100%; }
+#scanned-items-container {
+    max-height: 220px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid var(--glass-border);
 }
-/* container of credit card form */
+
+.item-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+/* --- NAVIGATION --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%); /* Centre parfaitement */
+    width: 90%;
+    max-width: 400px;
+    background: #0F172A;
+    border-radius: 50px;
+    display: flex;
+    padding: 8px;
+    border: 1px solid var(--glass-border);
+    z-index: 1000;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #64748B;
+    padding: 12px;
+    border-radius: 40px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1;
+}
+
+.nav-link.active {
+    flex: 2;
+    background: var(--primary-gradient);
+    color: white;
+    gap: 8px;
+}
+
+.nav-link span { display: none; font-weight: 800; font-size: 0.8rem; }
+.nav-link.active span { display: inline; }
+
+/* --- CARDS & GLASS --- */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    padding: 24px;
+    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* --- WALLET & CARDS --- */
 .wallet-section {
-    margin-top: 30px;
+    margin-top: 10px;
+    width: 100%;
 }
 
 .bank-card-visual {
     width: 100%;
-    height: 190px;
+    height: 180px;
     border-radius: 24px;
     padding: 25px;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 20px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(15px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    transition: transform 0.3s ease;
+    margin-bottom: 15px;
 }
 
-.bank-card-visual:hover { transform: translateY(-5px); }
-
-/* Thèmes de couleurs */
-.theme-purple { background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3)); }
-.theme-teal { background: linear-gradient(135deg, rgba(20, 184, 166, 0.3), rgba(16, 185, 129, 0.3)); }
+.theme-purple { background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.4)); }
+.theme-teal { background: linear-gradient(135deg, rgba(20, 184, 166, 0.4), rgba(16, 185, 129, 0.4)); }
 
 .card-chip {
-    width: 45px;
-    height: 35px;
+    width: 40px; height: 30px;
     background: linear-gradient(135deg, #FFD700, #FFA500);
     border-radius: 6px;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
 }
 
 .card-number-display {
-    font-size: 1.4rem;
-    letter-spacing: 4px;
+    font-size: 1.2rem;
+    letter-spacing: 3px;
     font-family: 'Courier New', monospace;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* --- NOTIFICATIONS --- */
+#notification-container {
+    position: fixed;
+    top: 20px;
+    width: 90%;
+    max-width: 400px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+}
+
+.toast {
+    background: rgba(15, 23, 42, 0.95);
+    border-left: 4px solid var(--accent-teal);
+    border-radius: 12px;
+    padding: 15px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }

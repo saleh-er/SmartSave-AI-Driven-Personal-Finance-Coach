@@ -528,7 +528,23 @@ async def read_coach(request: Request):
         "request": request, 
         "analysis": analysis
     })
+# route  delete card by id
+@router.delete("/delete-card/{card_id}")
+async def delete_card(card_id: int, db: Session = Depends(get_db)):
+    try:
+        card = db.query(BankCard).filter(BankCard.id == card_id).first()
+        if not card:
+            raise HTTPException(status_code=404, detail="Card not found")
+        
+        db.delete(card)
+        db.commit()
+        return {"status": "success", "message": "Card deleted"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    
 
+    
 #route for adding a transaction with card logic
 @router.post("/add-transaction")
 async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_db)):
