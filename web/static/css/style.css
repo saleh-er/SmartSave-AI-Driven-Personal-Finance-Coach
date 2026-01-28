@@ -775,3 +775,45 @@ body {
     0% { top: 0%; }
     100% { top: 100%; }
 }
+/* container of credit card form */
+.wallet-section {
+    margin-top: 30px;
+}
+
+.bank-card-visual {
+    width: 100%;
+    height: 190px;
+    border-radius: 24px;
+    padding: 25px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    transition: transform 0.3s ease;
+}
+
+.bank-card-visual:hover { transform: translateY(-5px); }
+
+/* Thèmes de couleurs */
+.theme-purple { background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3)); }
+.theme-teal { background: linear-gradient(135deg, rgba(20, 184, 166, 0.3), rgba(16, 185, 129, 0.3)); }
+
+.card-chip {
+    width: 45px;
+    height: 35px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border-radius: 6px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+}
+
+.card-number-display {
+    font-size: 1.4rem;
+    letter-spacing: 4px;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}

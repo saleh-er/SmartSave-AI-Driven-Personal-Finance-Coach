@@ -20,3 +20,15 @@ class Goal(Base):
     target = Column(Float)
     current = Column(Float, default=0.0)
     color = Column(String, default="#6366F1")
+
+    #add a credit card model
+class BankCard(Base):
+    __tablename__ = "bank_cards"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    bank_name = Column(String)     # Ex: Revolut, Attijari
+    last_four = Column(String)     # Ex: 4242
+    card_holder = Column(String)   # Nom sur la carte
+    card_type = Column(String)     # Visa, Mastercard
+    expiry_date = Column(String)   # MM/YY
+    color_scheme = Column(String)  # Pour le design (ex: "neon-purple", "emerald")

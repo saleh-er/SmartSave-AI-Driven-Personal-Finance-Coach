@@ -9,6 +9,18 @@ from fastapi.responses import StreamingResponse
 from fastapi import File, UploadFile
 from services.ocr_engine import OCREngine
 from fpdf import FPDF
+from models.models import BankCard
+from pydantic import BaseModel
+
+# Pydantic model for adding a bank card
+class CardSchema(BaseModel):
+    bank_name: str
+    last_four: str
+    card_holder: str
+    card_type: str
+    expiry_date: str
+    color_scheme: str
+
 # Fix pour les imports : on ajoute la racine du projet
 root_path = Path(__file__).parent.parent
 if str(root_path) not in sys.path:
@@ -212,6 +224,33 @@ async def read_settings(request: Request):
         "budget": USER_CONFIG["monthly_budget"],
         "name": "Saleh"
     })
+
+
+#route for bank cards page
+
+@router.post("/add-card")
+async def add_card(card_data: CardSchema, db: Session = Depends(get_db)):
+    try:
+        # On crée l'objet à partir de ta classe BankCard dans models.py
+        new_card = BankCard(
+            bank_name=card_data.bank_name,
+            last_four=card_data.last_four,
+            card_holder=card_data.card_holder,
+            card_type=card_data.card_type,
+            expiry_date=card_data.expiry_date,
+            color_scheme=card_data.color_scheme
+        )
+        
+        db.add(new_card)
+        db.commit()
+        db.refresh(new_card)
+        
+        return {"status": "success", "message": "Card added!", "card_id": new_card.id}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
+
 #router for reset data
 @router.post("/reset-data")
 async def reset_data(db: Session = Depends(get_db)):
