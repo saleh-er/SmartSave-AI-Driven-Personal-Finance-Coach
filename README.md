@@ -14,15 +14,6 @@ SmartSave is not just a simple budget manager; it is an intelligent financial co
 
 📱 Mobile-First Design: A modern "Glassmorphism" interface optimized for smartphone use.
 
-📱 Access the App from your Smartphone
-Ensure your PC and your phone are on the same Wi-Fi network.
-
-Launch the server by allowing external connections:
-
-Bash
-uvicorn main:app --host 0.0.0.0 --port 8000
-Open your mobile browser and go to http://your-computer-ip:8000.
-
 🏗️ Architecture & Data Flow
 Frontend (View): Interface built with Jinja2, HTML5, and CSS3 (Glassmorphism). It sends JSON requests to the server via fetch().
 
@@ -52,4 +43,11 @@ Balance Update: A subtraction operation is performed on card.balance.
 
 Atomic Commit: The transaction and the new balance are validated (commit) simultaneously to prevent any calculation errors.
 
-Would you like me to add a "Getting Started" section with the specific pip install commands needed to run the project?
+📱 Mobile Access
+Ensure your PC and your phone are on the same Wi-Fi network.
+
+Launch the server:
+
+Bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+Open your mobile browser and go to: http://<your-computer-ip>:8000
