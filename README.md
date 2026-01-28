@@ -3,7 +3,7 @@ Current Status: This project is under active development. I am currently focusin
 
 SmartSave is not just a simple budget manager; it is an intelligent financial coach. Using Artificial Intelligence, the application analyzes your receipts, tracks your spending in real-time, and automatically adjusts your bank card balances.
 
-🚀 Key Features
+🚀 Key Features:
 🤖 AI Receipt Scanner: Take a photo of your receipt and the AI automatically extracts the merchant, total amount, and individual items.
 
 💳 Digital Wallet Manager: Manage multiple cards (Revolut, Attijari, etc.) with personalized visuals and automatic balance tracking.
