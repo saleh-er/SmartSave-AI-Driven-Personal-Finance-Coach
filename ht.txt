@@ -18,23 +18,41 @@
         .ai-feed:hover { transform: translateY(-3px); border-color: var(--accent-teal); }
 
         .btn-settings-top {
-            color: white; background: rgba(255, 255, 255, 0.05); width: 42px; height: 42px; 
-            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            border: 1px solid rgba(255, 255, 255, 0.1); text-decoration: none; transition: all 0.3s ease;
+            color: white; 
+            background: rgba(255, 255, 255, 0.05); 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            text-decoration: none; 
+            transition: all 0.3s ease;
         }
 
-        .transaction-form-inner { display: flex; flex-direction: column; gap: 12px; }
+        .transaction-form { margin-top: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
         .form-row { display: flex; gap: 10px; margin-bottom: 5px; }
-        .form-row input, .form-row select {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white; padding: 10px; border-radius: 8px; flex: 1; outline: none;
+        .transaction-form input, .transaction-form select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            flex: 1;
+            outline: none;
         }
 
         #scanned-items-container {
-            max-height: 200px; overflow-y: auto; background: rgba(255, 255, 255, 0.02);
-            border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid rgba(16, 185, 129, 0.2);
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
         }
-
+        /* NOUVEAUX STYLES POUR LES CARTES */
         .cards-slider { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
         .cards-slider::-webkit-scrollbar { display: none; }
         
@@ -48,6 +66,7 @@
         
         .card-number-display { font-family: 'Courier New', monospace; letter-spacing: 2px; font-size: 1.2rem; margin: 15px 0; }
         
+        /* STYLE DU MODAL */
         #card-modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             z-index: 1000; width: 90%; max-width: 400px; padding: 25px;
@@ -60,15 +79,15 @@
 </head>
 <body>
     <div id="notification-container"></div>
-    <div id="modal-overlay" onclick="closeCardModal()"></div>
     
+    <div id="modal-overlay" onclick="closeCardModal()"></div>
     <div id="card-modal" class="glass-card">
         <h3 style="margin-bottom:20px;">Add New Bank Card 💳</h3>
-        <div class="transaction-form-inner">
+        <div class="transaction-form" style="padding:0; background:none;">
             <input type="text" id="card-bank" placeholder="Bank Name (ex: Revolut)">
             <input type="text" id="card-holder" placeholder="Card Holder Name">
             <div class="form-row">
-                <input type="text" id="card-last-four" placeholder="Last 4" maxlength="4">
+                <input type="text" id="card-last-four" placeholder="Last 4 Digits" maxlength="4">
                 <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5">
             </div>
             <div class="form-row">
@@ -87,7 +106,7 @@
             </div>
         </div>
     </div>
-
+    <div id="notification-container"></div>
     <div class="app-container">
         <header class="brand-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
             <div>
@@ -110,7 +129,6 @@
                     <div class="glass-reflection"></div>
                 </div>
             </div>
-
             <section style="margin-bottom: 25px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h3 style="margin: 0; font-size: 1rem; font-weight: 800;">My Wallet 💳</h3>
@@ -133,7 +151,7 @@
                         {% endfor %}
                     {% else %}
                         <div class="glass-card" style="width:100%; padding:20px; text-align:center; border:1px dashed rgba(255,255,255,0.2);">
-                            <p style="font-size:0.8rem; color:#94a3b8;">No cards linked. Tap + to add card.</p>
+                            <p style="font-size:0.8rem; color:#94a3b8;">No cards linked. Tap + to add your first card.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -147,26 +165,30 @@
                 </p>
             </div>
 
-            <div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
-                <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 15px;">Quick Add Expense 💸</h3>
-                
+            <div class="glass-card transaction-form">
+                <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Quick Add Expense 💸</h3>
+
                 <div class="form-row">
-                    <select id="tx-card-id" style="border: 1px solid var(--accent-teal); background: rgba(16, 185, 129, 0.05); color: white;">
-                        <option value="">💰 Cash (No Card)</option>
-                        {% for card in cards %}
+                  <select id="tx-card-id" style="border: 1px solid var(--accent-teal); background: rgba(16, 185, 129, 0.05);">
+                     <option value="">💰 Cash (No Card)</option>
+                       {% for card in cards %}
                         <option value="{{ card.id }}">💳 {{ card.bank_name }} ({{ card.last_four }})</option>
                         {% endfor %}
-                    </select>
-                    <button onclick="deleteSelectedCard()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; color: #EF4444; width: 42px; border-radius: 8px; cursor: pointer;">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                              </select>
+                              <button onclick="deleteSelectedCard()" title="Delete selected card" 
+                                style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; color: #EF4444; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                               <i class="fas fa-trash-alt"></i>
+                               </button>
                 </div>
-
-                <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()" style="margin: 15px 0;">
-                    <div class="scan-icon-wrapper"><i class="fas fa-expand"></i></div>
+            </div>
+                  
+                <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()">
+                    <div class="scan-icon-wrapper">
+                        <i class="fas fa-expand"></i>
+                    </div>
                     <div class="scan-text">
                         <h4>AI Smart Scanner</h4>
-                        <p>Tap to take a photo</p>
+                        <p>Tap to take a photo or drop a receipt</p>
                     </div>
                     <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(this)">
                 </div>
@@ -185,18 +207,19 @@
                         <option value="Food">Food 🍔</option>
                         <option value="Transport">Transport 🚗</option>
                         <option value="Housing">Housing 🏠</option>
-                        <option value="Subs">Subs 📺</option>
+                        <option value="Subs">Subscriptions 📺</option>
+                        <option value="Fun">Entertainment ✨</option>
                         <option value="Shopping">Shopping 🛍️</option>
                     </select>
-                    <button id="submit-btn" onclick="submitTransaction()" style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; flex:1;">Add</button>
+                    <button id="submit-btn" onclick="submitTransaction()" class="btn-add-tx" style="background: var(--primary-gradient); color: rgb(255, 255, 255); border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">Add</button>
                 </div>
-                <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; margin-top:10px;">
+                <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8;">
                     <input type="checkbox" id="tx-essential" checked>
                     <label for="tx-essential">Is this essential?</label>
                 </div>
             </div>
 
-            <div class="glass-card tx-list-container">
+            <div class="glass-card tx-list-container" style="margin-top: 20px;">
                 <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Recent Transactions</h3>
                 {% if transactions %}
                     {% for tx in transactions %}
@@ -240,8 +263,8 @@
     async function processReceipt(input) {
         if (input.files && input.files[0]) {
             const dropZone = document.getElementById('drop-zone');
-            dropZone.style.opacity = "0.5";
-            showNotification("AI is analyzing...", "fa-expand");
+            dropZone.classList.add('processing');
+            showNotification("AI is analyzing your items...", "fa-expand");
             
             let formData = new FormData();
             formData.append("file", input.files[0]);
@@ -260,7 +283,7 @@
 
                     if (result.data.items && result.data.items.length > 0) {
                         container.style.display = "block";
-                        document.getElementById('submit-btn').innerHTML = `<i class="fas fa-plus-circle"></i> Add All`;
+                        document.getElementById('submit-btn').innerHTML = `<i class="fas fa-plus-circle"></i> Add All Items`;
                         
                         result.data.items.forEach(item => {
                             const row = document.createElement('div');
@@ -278,7 +301,7 @@
             } catch (e) {
                 showNotification("Scan error", "fa-xmark");
             } finally {
-                dropZone.style.opacity = "1";
+                dropZone.classList.remove('processing');
             }
         }
     }
@@ -290,45 +313,61 @@
             document.getElementById('submit-btn').innerText = "Add";
         }
     }
-
+     
+    // --- LOGIQUE CRUD ---
     async function submitTransaction() {
-        const itemRows = document.querySelectorAll('.item-row');
-        const merchant = document.getElementById('tx-merchant').value;
-        const category = document.getElementById('tx-category').value;
-        const isEssential = document.getElementById('tx-essential').checked;
-        const cardId = document.getElementById('tx-card-id').value;
+    const itemRows = document.querySelectorAll('.item-row');
+    const merchant = document.getElementById('tx-merchant').value;
+    const category = document.getElementById('tx-category').value;
+    const isEssential = document.getElementById('tx-essential').checked;
+    
+    // Récupération de l'ID de la carte sélectionnée
+    const cardId = document.getElementById('tx-card-id').value;
 
-        if (itemRows.length > 0) {
-            showNotification("Saving items...", "fa-spinner fa-spin");
-            const promises = Array.from(itemRows).map(row => {
-                return fetch('/add-transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        merchant: `${merchant} (${row.querySelector('.item-label').value})`,
-                        amount: parseFloat(row.querySelector('.item-price').value),
-                        category, is_essential: isEssential,
-                        card_id: cardId ? parseInt(cardId) : null
-                    })
-                });
-            });
-            await Promise.all(promises);
-            location.reload();
-        } else {
-            const amount = document.getElementById('tx-amount').value;
-            if (!merchant || !amount) return;
-            const res = await fetch('/add-transaction', {
+    if (itemRows.length > 0) {
+        showNotification("Saving items...", "fa-spinner fa-spin");
+        const promises = Array.from(itemRows).map(row => {
+            const label = row.querySelector('.item-label').value;
+            const price = row.querySelector('.item-price').value;
+            
+            return fetch('/add-transaction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    merchant, amount: parseFloat(amount),
-                    category, is_essential: isEssential,
-                    card_id: cardId ? parseInt(cardId) : null
+                body: JSON.stringify({
+                    merchant: `${merchant} (${label})`,
+                    amount: parseFloat(price), // Conversion en nombre pour le backend
+                    category: category,
+                    is_essential: isEssential, // Virgule ajoutée ici
+                    card_id: cardId ? parseInt(cardId) : null // Envoi du card_id ou null
                 })
             });
-            if ((await res.json()).status === "success") location.reload();
+        });
+        await Promise.all(promises);
+        location.reload();
+    } else {
+        const amount = document.getElementById('tx-amount').value;
+        if (!merchant || !amount) return;
+        
+        const res = await fetch('/add-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                merchant, 
+                amount: parseFloat(amount), // Conversion en nombre
+                category, 
+                is_essential: isEssential, 
+                card_id: cardId ? parseInt(cardId) : null // Envoi du card_id
+            })
+        });
+        
+        const data = await res.json();
+        if (data.status === "success") {
+            location.reload();
+        } else {
+            showNotification("Error: " + data.detail, "fa-xmark");
         }
     }
+}
 
     async function deleteTransaction(txId) {
         if (!confirm("Delete transaction?")) return;
@@ -348,7 +387,17 @@
         }
     }
 
-    function openCardModal() {
+    function showNotification(message, icon = "fa-bell") {
+        const container = document.getElementById('notification-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        toast.innerHTML = `<i class="fas ${icon}"></i><div class="toast-content"><p>${message}</p></div>`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 500); }, 3000);
+    }
+     // -- wallet functions --
+  
+     function openCardModal() {
         document.getElementById('card-modal').style.display = 'block';
         document.getElementById('modal-overlay').style.display = 'block';
     }
@@ -367,21 +416,25 @@
             expiry_date: document.getElementById('card-expiry').value,
             color_scheme: document.getElementById('card-color').value
         };
-        const response = await fetch('/add-card', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cardData)
-        });
-        if ((await response.json()).status === "success") location.reload();
+
+        if(!cardData.bank_name || !cardData.last_four) return alert("Please fill important fields");
+
+        try {
+            const response = await fetch('/add-card', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cardData)
+            });
+            const result = await response.json();
+            if (result.status === "success") {
+                showNotification("Card added! ✨", "fa-check");
+                location.reload();
+            }
+        } catch (e) {
+            showNotification("Error adding card", "fa-xmark");
+        }
     }
 
-    function showNotification(message, icon = "fa-bell") {
-        const container = document.getElementById('notification-container');
-        const toast = document.createElement('div');
-        toast.className = 'toast show';
-        toast.innerHTML = `<i class="fas ${icon}"></i><p>${message}</p>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
 
     window.onload = () => {
         const score = parseInt(document.getElementById('scoreValue').innerText || 0);
@@ -392,12 +445,33 @@
         else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Emergency! Check spendings. ⚠️"; }
     };
 
+    // delete card function
     async function deleteSelectedCard() {
-        const cardId = document.getElementById('tx-card-id').value;
-        if (!cardId || !confirm("Delete this card?")) return;
-        const response = await fetch(`/delete-card/${cardId}`, { method: 'DELETE' });
-        if ((await response.json()).status === "success") location.reload();
+    const cardId = document.getElementById('tx-card-id').value;
+    
+    if (!cardId) {
+        showNotification("Select a card to delete", "fa-info-circle");
+        return;
     }
+
+    if (!confirm("Are you sure you want to delete this card? This will not delete its transactions.")) return;
+
+    try {
+        const response = await fetch(`/delete-card/${cardId}`, { 
+            method: 'DELETE' 
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+            showNotification("Card removed successfully", "fa-trash");
+            location.reload(); // Recharge pour mettre à jour le menu et le Wallet
+        } else {
+            showNotification("Error: " + result.message, "fa-xmark");
+        }
+    } catch (e) {
+        showNotification("Server error", "fa-xmark");
+    }
+}
     </script>
 </body>
 </html>
