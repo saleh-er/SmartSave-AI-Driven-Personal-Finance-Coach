@@ -167,7 +167,16 @@
 
             <div class="glass-card transaction-form">
                 <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Quick Add Expense 💸</h3>
-                
+
+                <div class="form-row">
+                  <select id="tx-card-id" style="border: 1px solid var(--accent-teal); background: rgba(16, 185, 129, 0.05);">
+                     <option value="">💰 Cash (No Card)</option>
+                       {% for card in cards %}
+                        <option value="{{ card.id }}">💳 {{ card.bank_name }} ({{ card.last_four }})</option>
+                        {% endfor %}
+                              </select>
+                </div>
+
                 <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()">
                     <div class="scan-icon-wrapper">
                         <i class="fas fa-expand"></i>
@@ -302,40 +311,58 @@
      
     // --- LOGIQUE CRUD ---
     async function submitTransaction() {
-        const itemRows = document.querySelectorAll('.item-row');
-        const merchant = document.getElementById('tx-merchant').value;
-        const category = document.getElementById('tx-category').value;
-        const isEssential = document.getElementById('tx-essential').checked;
+    const itemRows = document.querySelectorAll('.item-row');
+    const merchant = document.getElementById('tx-merchant').value;
+    const category = document.getElementById('tx-category').value;
+    const isEssential = document.getElementById('tx-essential').checked;
+    
+    // Récupération de l'ID de la carte sélectionnée
+    const cardId = document.getElementById('tx-card-id').value;
 
-        if (itemRows.length > 0) {
-            showNotification("Saving items...", "fa-spinner fa-spin");
-            const promises = Array.from(itemRows).map(row => {
-                const label = row.querySelector('.item-label').value;
-                const price = row.querySelector('.item-price').value;
-                return fetch('/add-transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        merchant: `${merchant} (${label})`,
-                        amount: price,
-                        category: category,
-                        is_essential: isEssential
-                    })
-                });
-            });
-            await Promise.all(promises);
-            location.reload();
-        } else {
-            const amount = document.getElementById('tx-amount').value;
-            if (!merchant || !amount) return;
-            const res = await fetch('/add-transaction', {
+    if (itemRows.length > 0) {
+        showNotification("Saving items...", "fa-spinner fa-spin");
+        const promises = Array.from(itemRows).map(row => {
+            const label = row.querySelector('.item-label').value;
+            const price = row.querySelector('.item-price').value;
+            
+            return fetch('/add-transaction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ merchant, amount, category, is_essential: isEssential })
+                body: JSON.stringify({
+                    merchant: `${merchant} (${label})`,
+                    amount: parseFloat(price), // Conversion en nombre pour le backend
+                    category: category,
+                    is_essential: isEssential, // Virgule ajoutée ici
+                    card_id: cardId ? parseInt(cardId) : null // Envoi du card_id ou null
+                })
             });
-            if ((await res.json()).status === "success") location.reload();
+        });
+        await Promise.all(promises);
+        location.reload();
+    } else {
+        const amount = document.getElementById('tx-amount').value;
+        if (!merchant || !amount) return;
+        
+        const res = await fetch('/add-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                merchant, 
+                amount: parseFloat(amount), // Conversion en nombre
+                category, 
+                is_essential: isEssential, 
+                card_id: cardId ? parseInt(cardId) : null // Envoi du card_id
+            })
+        });
+        
+        const data = await res.json();
+        if (data.status === "success") {
+            location.reload();
+        } else {
+            showNotification("Error: " + data.detail, "fa-xmark");
         }
     }
+}
 
     async function deleteTransaction(txId) {
         if (!confirm("Delete transaction?")) return;

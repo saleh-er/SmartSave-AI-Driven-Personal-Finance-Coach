@@ -196,7 +196,7 @@ async def export_pdf(db: Session = Depends(get_db)):
 async def read_home(request: Request, db: Session = Depends(get_db)):
     db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
-    
+    cards = db.query(BankCard).all()
     analysis = SerenityEngine.analyze_finances(
         tx_to_analyze, budget=USER_CONFIG["monthly_budget"])
 
@@ -209,6 +209,7 @@ async def read_home(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "name": "Saleh",
+        "cards": cards,
         "score": analysis["score"],
         "status": analysis["status"],
         "remaining": round(remaining, 2),
@@ -527,20 +528,37 @@ async def read_coach(request: Request):
         "request": request, 
         "analysis": analysis
     })
+
+#route for adding a transaction with card logic
 @router.post("/add-transaction")
 async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_db)):
     try:
+        # 1. On crée la transaction normalement
         new_tx = Transaction(
             merchant=payload.get("merchant"),
             amount=float(payload.get("amount")),
             category=payload.get("category"),
             is_essential=payload.get("is_essential", False),
-            # La date sera ajoutée automatiquement par le modèle (datetime.utcnow)
         )
         db.add(new_tx)
+
+        # 2. LOGIQUE DE LA CARTE : On vérifie si un card_id est envoyé
+        card_id = payload.get("card_id")
+        if card_id:
+            # On cherche la carte dans la base
+            card = db.query(BankCard).filter(BankCard.id == int(card_id)).first()
+            if card:
+                # On soustrait le montant de la dépense du solde de la carte
+                # Note: Assure-toi d'avoir un champ 'balance' dans ton modèle BankCard
+                if hasattr(card, 'balance'):
+                    card.balance -= float(payload.get("amount"))
+        
+        # 3. On valide tout en une seule fois
         db.commit()
         db.refresh(new_tx)
+        
         return {"status": "success", "transaction": new_tx.merchant}
+    
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error adding transaction: {str(e)}")
