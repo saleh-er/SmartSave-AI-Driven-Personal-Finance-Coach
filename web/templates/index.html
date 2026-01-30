@@ -64,6 +64,18 @@
     
     <div id="card-modal" class="glass-card">
         <h3 style="margin-bottom:20px;">Add New Bank Card 💳</h3>
+        
+        <div class="scan-container" id="card-scan-zone" onclick="document.getElementById('card-upload').click()" style="margin-bottom: 20px; border: 2px dashed var(--accent-teal); cursor: pointer;">
+            <div class="scan-icon-wrapper" style="background: var(--primary-gradient);">
+                <i class="fas fa-credit-card"></i>
+            </div>
+            <div class="scan-text">
+                <h4>Scan Your Card</h4>
+                <p>Tap to capture details via AI</p>
+            </div>
+            <input type="file" id="card-upload" accept="image/*" capture="environment" style="display: none;" onchange="processCardScan(this)">
+        </div>
+
         <div class="transaction-form-inner">
             <input type="text" id="card-bank" placeholder="Bank Name (ex: Revolut)">
             <input type="text" id="card-holder" placeholder="Card Holder Name">
@@ -150,65 +162,53 @@
             <div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
                 <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 15px;">Quick Add Expense 💸</h3>
                 
-                <div class="form-row">
-                    <select id="tx-card-id" style="border: 1px solid var(--accent-teal); background: rgba(16, 185, 129, 0.05); color: white;">
-                        <option value="">💰 Cash (No Card)</option>
-                        {% for card in cards %}
-                        <option value="{{ card.id }}">💳 {{ card.bank_name }} ({{ card.last_four }})</option>
-                        {% endfor %}
-                    </select>
-                    <button onclick="deleteSelectedCard()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; color: #EF4444; width: 42px; border-radius: 8px; cursor: pointer;">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-
-
-
-                </div>
-                   <div class="scan-container" id="card-scan-zone" onclick="document.getElementById('card-upload').click()" style="margin-bottom: 20px; border: 2px dashed var(--accent-teal);">
-                    <div class="scan-icon-wrapper" style="background: var(--primary-gradient);">
-                     <i class="fas fa-credit-card"></i>
-                  </div>
-                  <div class="scan-text">
-                     <h4>Scan Your Card</h4>
-                    <p>Tap to capture card details via AI</p>
-                   </div>
-                  <input type="file" id="card-upload" accept="image/*" capture="environment" style="display: none;" onchange="processCardScan(this)">
-                   </div>
-
-
-
-
-                <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()" style="margin: 15px 0;">
-                    <div class="scan-icon-wrapper"><i class="fas fa-expand"></i></div>
-                    <div class="scan-text">
-                        <h4>AI Smart Scanner</h4>
-                        <p>Tap to take a photo</p>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="form-row" style="display: flex; gap: 10px;">
+                        <select id="tx-card-id" style="flex: 1; border: 1px solid var(--accent-teal); background: rgba(16, 185, 129, 0.05); color: white; padding: 10px; border-radius: 8px;">
+                            <option value="">💰 Cash (No Card)</option>
+                            {% for card in cards %}
+                            <option value="{{ card.id }}">💳 {{ card.bank_name }} ({{ card.last_four }})</option>
+                            {% endfor %}
+                        </select>
+                        <button onclick="deleteSelectedCard()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; color: #EF4444; width: 42px; border-radius: 8px; cursor: pointer;">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
-                    <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(this)">
-                </div>
 
-                <div id="scanned-items-container" style="display: none;">
-                    <h4 style="font-size: 0.75rem; color: var(--accent-teal); margin-bottom: 8px;">DETECTED ITEMS</h4>
-                    <div id="items-list"></div>
-                </div>
+                    <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()" style="margin: 0;">
+                        <div class="scan-icon-wrapper"><i class="fas fa-expand"></i></div>
+                        <div class="scan-text">
+                            <h4>AI Smart Scanner</h4>
+                            <p>Tap to scan receipt</p>
+                        </div>
+                        <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(this)">
+                    </div>
 
-                <div class="form-row">
-                    <input type="text" id="tx-merchant" placeholder="Store/Merchant">
-                    <input type="number" id="tx-amount" placeholder="Amount (€)">
-                </div>
-                <div class="form-row">
-                    <select id="tx-category">
-                        <option value="Food">Food 🍔</option>
-                        <option value="Transport">Transport 🚗</option>
-                        <option value="Housing">Housing 🏠</option>
-                        <option value="Subs">Subs 📺</option>
-                        <option value="Shopping">Shopping 🛍️</option>
-                    </select>
-                    <button id="submit-btn" onclick="submitTransaction()" style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; flex:1;">Add</button>
-                </div>
-                <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; margin-top:10px;">
-                    <input type="checkbox" id="tx-essential" checked>
-                    <label for="tx-essential">Is this essential?</label>
+                    <div id="scanned-items-container" style="display: none;">
+                        <h4 style="font-size: 0.75rem; color: var(--accent-teal); margin-bottom: 8px;">DETECTED ITEMS</h4>
+                        <div id="items-list"></div>
+                    </div>
+
+                    <div class="form-row" style="display: flex; gap: 10px;">
+                        <input type="text" id="tx-merchant" placeholder="Store/Merchant" style="flex: 2; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;">
+                        <input type="number" id="tx-amount" placeholder="€" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;">
+                    </div>
+
+                    <div class="form-row" style="display: flex; gap: 10px;">
+                        <select id="tx-category" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;">
+                            <option value="Food">Food 🍔</option>
+                            <option value="Transport">Transport 🚗</option>
+                            <option value="Housing">Housing 🏠</option>
+                            <option value="Subs">Subs 📺</option>
+                            <option value="Shopping">Shopping 🛍️</option>
+                        </select>
+                        <button id="submit-btn" onclick="submitTransaction()" style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; flex:1; cursor: pointer;">Add</button>
+                    </div>
+
+                    <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8;">
+                        <input type="checkbox" id="tx-essential" checked>
+                        <label for="tx-essential">Is this essential?</label>
+                    </div>
                 </div>
             </div>
 
@@ -252,118 +252,17 @@
     </div>
 
     <script>
-    // --- LOGIQUE DU SCANNER ---
-    async function processReceipt(input) {
-        if (input.files && input.files[0]) {
-            const dropZone = document.getElementById('drop-zone');
-            dropZone.style.opacity = "0.5";
-            showNotification("AI is analyzing...", "fa-expand");
-            
-            let formData = new FormData();
-            formData.append("file", input.files[0]);
-
-            try {
-                const response = await fetch('/scan-receipt', { method: 'POST', body: formData });
-                const result = await response.json();
-
-                if (result.status === "success") {
-                    document.getElementById('tx-merchant').value = result.data.merchant;
-                    document.getElementById('tx-amount').value = result.data.total;
-                    
-                    const container = document.getElementById('scanned-items-container');
-                    const list = document.getElementById('items-list');
-                    list.innerHTML = "";
-
-                    if (result.data.items && result.data.items.length > 0) {
-                        container.style.display = "block";
-                        document.getElementById('submit-btn').innerHTML = `<i class="fas fa-plus-circle"></i> Add All`;
-                        
-                        result.data.items.forEach(item => {
-                            const row = document.createElement('div');
-                            row.className = 'form-row item-row';
-                            row.innerHTML = `
-                                <input type="text" class="item-label" value="${item.label}" style="flex: 3; font-size: 0.75rem;">
-                                <input type="number" class="item-price" value="${item.price}" style="flex: 1; font-size: 0.75rem;">
-                                <button onclick="removeItem(this)" style="color:#EF4444; border:none; background:none;"><i class="fas fa-times"></i></button>
-                            `;
-                            list.appendChild(row);
-                        });
-                    }
-                    showNotification("Analysis complete!", "fa-check");
-                }
-            } catch (e) {
-                showNotification("Scan error", "fa-xmark");
-            } finally {
-                dropZone.style.opacity = "1";
-            }
-        }
+    // --- NOTIFICATIONS ---
+    function showNotification(message, icon = "fa-bell") {
+        const container = document.getElementById('notification-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        toast.innerHTML = `<i class="fas ${icon}"></i><p>${message}</p>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 
-    function removeItem(btn) {
-        btn.parentElement.remove();
-        if (document.querySelectorAll('.item-row').length === 0) {
-            document.getElementById('scanned-items-container').style.display = "none";
-            document.getElementById('submit-btn').innerText = "Add";
-        }
-    }
-
-    async function submitTransaction() {
-        const itemRows = document.querySelectorAll('.item-row');
-        const merchant = document.getElementById('tx-merchant').value;
-        const category = document.getElementById('tx-category').value;
-        const isEssential = document.getElementById('tx-essential').checked;
-        const cardId = document.getElementById('tx-card-id').value;
-
-        if (itemRows.length > 0) {
-            showNotification("Saving items...", "fa-spinner fa-spin");
-            const promises = Array.from(itemRows).map(row => {
-                return fetch('/add-transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        merchant: `${merchant} (${row.querySelector('.item-label').value})`,
-                        amount: parseFloat(row.querySelector('.item-price').value),
-                        category, is_essential: isEssential,
-                        card_id: cardId ? parseInt(cardId) : null
-                    })
-                });
-            });
-            await Promise.all(promises);
-            location.reload();
-        } else {
-            const amount = document.getElementById('tx-amount').value;
-            if (!merchant || !amount) return;
-            const res = await fetch('/add-transaction', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    merchant, amount: parseFloat(amount),
-                    category, is_essential: isEssential,
-                    card_id: cardId ? parseInt(cardId) : null
-                })
-            });
-            if ((await res.json()).status === "success") location.reload();
-        }
-    }
-
-    async function deleteTransaction(txId) {
-        if (!confirm("Delete transaction?")) return;
-        const res = await fetch(`/delete-transaction/${txId}`, { method: 'DELETE' });
-        if ((await res.json()).status === "success") location.reload();
-    }
-
-    async function editBudget() {
-        const newBudget = prompt("Set new budget:", "{{ budget }}");
-        if (newBudget && !isNaN(newBudget)) {
-            const res = await fetch('/update-budget', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ budget: parseFloat(newBudget) })
-            });
-            if ((await res.json()).status === "success") location.reload();
-        }
-    }
-
+    // --- MODAL CARD FUNCTIONS ---
     function openCardModal() {
         document.getElementById('card-modal').style.display = 'block';
         document.getElementById('modal-overlay').style.display = 'block';
@@ -372,6 +271,72 @@
     function closeCardModal() {
         document.getElementById('card-modal').style.display = 'none';
         document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    // --- SCANNER LOGIQUE ---
+    async function processReceipt(input) {
+        if (input.files && input.files[0]) {
+            const dropZone = document.getElementById('drop-zone');
+            dropZone.style.opacity = "0.5";
+            showNotification("AI is analyzing...", "fa-expand");
+            let formData = new FormData();
+            formData.append("file", input.files[0]);
+            try {
+                const response = await fetch('/scan-receipt', { method: 'POST', body: formData });
+                const result = await response.json();
+                if (result.status === "success") {
+                    document.getElementById('tx-merchant').value = result.data.merchant;
+                    document.getElementById('tx-amount').value = result.data.total;
+                    const container = document.getElementById('scanned-items-container');
+                    const list = document.getElementById('items-list');
+                    list.innerHTML = "";
+                    if (result.data.items && result.data.items.length > 0) {
+                        container.style.display = "block";
+                        result.data.items.forEach(item => {
+                            const row = document.createElement('div');
+                            row.className = 'form-row item-row';
+                            row.innerHTML = `<input type="text" class="item-label" value="${item.label}" style="flex: 3; font-size: 0.75rem;"><input type="number" class="item-price" value="${item.price}" style="flex: 1; font-size: 0.75rem;"><button onclick="removeItem(this)" style="color:#EF4444; border:none; background:none;"><i class="fas fa-times"></i></button>`;
+                            list.appendChild(row);
+                        });
+                    }
+                    showNotification("Analysis complete!", "fa-check");
+                }
+            } catch (e) { showNotification("Scan error", "fa-xmark"); }
+            finally { dropZone.style.opacity = "1"; }
+        }
+    }
+
+    async function processCardScan(input) {
+        if (input.files && input.files[0]) {
+            showNotification("AI is analyzing card...", "fa-credit-card");
+            let formData = new FormData();
+            formData.append("file", input.files[0]);
+            const response = await fetch('/scan-card', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.status === "success") {
+                document.getElementById('card-bank').value = result.data.bank_name;
+                document.getElementById('card-last-four').value = result.data.last_four;
+                document.getElementById('card-expiry').value = result.data.expiry;
+                document.getElementById('card-holder').value = result.data.holder;
+                showNotification("Details captured!", "fa-check");
+            }
+        }
+    }
+
+    // --- CRUD ---
+    async function submitTransaction() {
+        const merchant = document.getElementById('tx-merchant').value;
+        const amount = document.getElementById('tx-amount').value;
+        const category = document.getElementById('tx-category').value;
+        const isEssential = document.getElementById('tx-essential').checked;
+        const cardId = document.getElementById('tx-card-id').value;
+        if (!merchant || !amount) return;
+        const res = await fetch('/add-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ merchant, amount: parseFloat(amount), category, is_essential: isEssential, card_id: cardId ? parseInt(cardId) : null })
+        });
+        if ((await res.json()).status === "success") location.reload();
     }
 
     async function submitNewCard() {
@@ -383,20 +348,21 @@
             expiry_date: document.getElementById('card-expiry').value,
             color_scheme: document.getElementById('card-color').value
         };
-        const response = await fetch('/add-card', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cardData)
-        });
+        const response = await fetch('/add-card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cardData) });
         if ((await response.json()).status === "success") location.reload();
     }
 
-    function showNotification(message, icon = "fa-bell") {
-        const container = document.getElementById('notification-container');
-        const toast = document.createElement('div');
-        toast.className = 'toast show';
-        toast.innerHTML = `<i class="fas ${icon}"></i><p>${message}</p>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+    async function deleteTransaction(txId) {
+        if (!confirm("Delete?")) return;
+        const res = await fetch(`/delete-transaction/${txId}`, { method: 'DELETE' });
+        if ((await res.json()).status === "success") location.reload();
+    }
+
+    async function deleteSelectedCard() {
+        const cardId = document.getElementById('tx-card-id').value;
+        if (!cardId || !confirm("Delete card?")) return;
+        const response = await fetch(`/delete-card/${cardId}`, { method: 'DELETE' });
+        if ((await response.json()).status === "success") location.reload();
     }
 
     window.onload = () => {
@@ -407,40 +373,6 @@
         else if (score >= 50) { ring.style.borderColor = "#F59E0B"; aiText.innerHTML = "Careful, budget is tight."; }
         else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Emergency! Check spendings. ⚠️"; }
     };
-
-    async function deleteSelectedCard() {
-        const cardId = document.getElementById('tx-card-id').value;
-        if (!cardId || !confirm("Delete this card?")) return;
-        const response = await fetch(`/delete-card/${cardId}`, { method: 'DELETE' });
-        if ((await response.json()).status === "success") location.reload();
-    }
-
-
-    async function processCardScan(input) {
-    if (input.files && input.files[0]) {
-        showNotification("AI is reading card details...", "fa-brands fa-ai");
-        
-        let formData = new FormData();
-        formData.append("file", input.files[0]);
-
-        try {
-            const response = await fetch('/scan-card', { method: 'POST', body: formData });
-            const result = await response.json();
-
-            if (result.status === "success") {
-                // Remplissage automatique des champs
-                document.getElementById('card-bank').value = result.data.bank_name || "";
-                document.getElementById('card-last-four').value = result.data.last_four || "";
-                document.getElementById('card-expiry').value = result.data.expiry || "";
-                document.getElementById('card-holder').value = result.data.holder || "";
-                
-                showNotification("Card scanned successfully!", "fa-check");
-            }
-        } catch (e) {
-            showNotification("Scan failed", "fa-xmark");
-        }
-    }
-}
     </script>
 </body>
 </html>

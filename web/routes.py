@@ -5,13 +5,20 @@ import json
 from io import StringIO, BytesIO
 from pathlib import Path
 from datetime import datetime, timedelta
+from xmlrpc import client
 from fastapi.responses import StreamingResponse
-from fastapi import File, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from services.ocr_engine import OCREngine
 from fpdf import FPDF
 from models.models import BankCard
 from pydantic import BaseModel
-
+import google.generativeai as genai
+import json
+from dotenv import load_dotenv
+load_dotenv()
+# Initialisation for Gemini AI
+api_key = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=api_key)
 # Pydantic model for adding a bank card
 class CardSchema(BaseModel):
     bank_name: str
@@ -582,16 +589,23 @@ async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_d
     #scan card
 @router.post("/scan-card")
 async def scan_card(file: UploadFile = File(...)):
-    # 1. Lecture du fichier
     contents = await file.read()
     
-    # 2. Ton IA doit analyser 'contents' ici pour extraire les vraies infos
-    # Pour l'instant, on prépare la structure de retour
-    ai_extracted_data = {
-        "bank_name": "Detected Bank", # Sera remplacé par l'IA
-        "last_four": "0000",          # Sera remplacé par l'IA
-        "holder": "Saleh",            # Sera remplacé par l'IA
-        "expiry": "MM/YY"             # Sera remplacé par l'IA
-    }
-    
-    return {"status": "success", "data": ai_extracted_data}
+    prompt = """
+    Analyze this credit card image. Extract ONLY:
+    - Bank Name (bank_name)
+    - Last 4 digits (last_four)
+    - Holder name (holder)
+    - Expiration (expiry) as MM/YY
+    Return valid JSON.
+    """
+
+    # Appel à l'IA (Modèle gemini-1.5-flash recommandé pour la vitesse)
+    response = client.models.generate_content(
+        model="gemini-1.5-flash", 
+        contents=[prompt, contents]
+    )
+
+    # Nettoyage et retour
+    raw_text = response.text.strip().replace('```json', '').replace('```', '')
+    return {"status": "success", "data": json.loads(raw_text)}
