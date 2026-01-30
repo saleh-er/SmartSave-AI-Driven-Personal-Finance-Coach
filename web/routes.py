@@ -2,23 +2,37 @@ import csv
 import sys
 import os
 import json
+import traceback
 from io import StringIO, BytesIO
 from pathlib import Path
 from datetime import datetime, timedelta
-from xmlrpc import client
-from fastapi.responses import StreamingResponse
-from fastapi import APIRouter, File, UploadFile
-from services.ocr_engine import OCREngine
-from fpdf import FPDF
-from models.models import BankCard
+
+from fastapi import APIRouter, File, UploadFile, Request, Body, Depends, HTTPException
+from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
-import google.generativeai as genai
-import json
+from google import genai
 from dotenv import load_dotenv
+from fpdf import FPDF
 load_dotenv()
-# Initialisation for Gemini AI
+from database import get_db
+from models.models import BankCard, Transaction, Goal
+from services.ocr_engine import OCREngine
+from services.serenity_engine import SerenityEngine
+from api.open_ai_client import AICoach
+
+# Initialisation
+router = APIRouter()
+templates = Jinja2Templates(directory="web/templates")
+coach = AICoach()
+
+# Initialisation pour Gemini AI
 api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key)
+if not api_key:
+    print("ERREUR : La clé GEMINI_API_KEY est introuvable dans le fichier .env")
+# Initialisation du client GenAI
+ai_client = genai.Client(api_key=api_key)
 # Pydantic model for adding a bank card
 class CardSchema(BaseModel):
     bank_name: str
@@ -27,7 +41,7 @@ class CardSchema(BaseModel):
     card_type: str
     expiry_date: str
     color_scheme: str
-
+CONFIG_FILE = "user_settings.json"
 # Fix pour les imports : on ajoute la racine du projet
 root_path = Path(__file__).parent.parent
 if str(root_path) not in sys.path:
@@ -589,23 +603,21 @@ async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_d
     #scan card
 @router.post("/scan-card")
 async def scan_card(file: UploadFile = File(...)):
-    contents = await file.read()
-    
-    prompt = """
-    Analyze this credit card image. Extract ONLY:
-    - Bank Name (bank_name)
-    - Last 4 digits (last_four)
-    - Holder name (holder)
-    - Expiration (expiry) as MM/YY
-    Return valid JSON.
-    """
+    try:
+        contents = await file.read()
+        prompt = "Analyze this credit card image. Extract ONLY: Bank Name (bank_name), Last 4 digits (last_four), Holder name (holder), Expiration (expiry) as MM/YY. Return valid JSON."
 
-    # Appel à l'IA (Modèle gemini-1.5-flash recommandé pour la vitesse)
-    response = client.models.generate_content(
-        model="gemini-1.5-flash", 
-        contents=[prompt, contents]
-    )
+        # Utilisation sécurisée du client AI
+        response = ai_client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[
+                prompt,
+                {"mime_type": "image/jpeg", "data": contents}
+            ]
+        )
 
-    # Nettoyage et retour
-    raw_text = response.text.strip().replace('```json', '').replace('```', '')
-    return {"status": "success", "data": json.loads(raw_text)}
+        raw_text = response.text.strip().replace('```json', '').replace('```', '')
+        return {"status": "success", "data": json.loads(raw_text)}
+    except Exception as e:
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
