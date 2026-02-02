@@ -418,6 +418,35 @@ async function checkFinancialAnomalies() {
         console.error("AI Analysis failed:", error);
     }
 }
+// edit budget
+async function editBudget() {
+    // 1. reqquest the new budget limit
+    const currentLimit = "{{ budget|int }}";
+    const newBudget = prompt("Enter your new monthly budget limit (€):", currentLimit);
+    
+    // 2. if the user provided a value, send it to the server
+    if (newBudget !== null && newBudget !== "") {
+        try {
+            const response = await fetch('/update-budget', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ budget: parseFloat(newBudget) })
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                // 3. refresh the page to reflect the new budget
+                window.location.reload();
+            } else {
+                alert("Error: " + result.detail);
+            }
+        } catch (error) {
+            console.error("Failed to update budget:", error);
+            alert("Connection error. Please try again.");
+        }
+    }
+}
 
     </script>
 </body>
