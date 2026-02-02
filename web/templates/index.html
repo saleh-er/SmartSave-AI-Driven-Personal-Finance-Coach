@@ -405,9 +405,9 @@ async function checkFinancialAnomalies() {
             alertText.innerText = data.analysis.reason + " Recommendation: " + data.analysis.advice;
             alertDiv.style.display = 'block';
             
-            // Change la couleur selon la sévérité
+            // change border color based on severity
             if (data.analysis.severity === 'high') {
-                alertDiv.style.borderLeftColor = '#EF4444'; // Rouge
+                alertDiv.style.borderLeftColor = '#EF4444'; // Red
             } else {
                 alertDiv.style.borderLeftColor = '#F59E0B'; // Orange
             }

@@ -667,3 +667,48 @@ async def analyze_spending(db: Session = Depends(get_db)):
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    
+    
+    #route for goals prediction
+
+@router.get("/goal-prediction/{goal_id}")
+async def goal_prediction(goal_id: int, db: Session = Depends(get_db)):
+    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+
+    # 1. Calculate monthly savings capacity
+    db_tx = db.query(Transaction).all()
+    analysis = SerenityEngine.analyze_finances(db_tx, budget=USER_CONFIG["monthly_budget"])
+    
+    # Capacity of saving each month
+    monthly_savings_capacity = USER_CONFIG["monthly_budget"] - analysis['total_spent']
+    remaining_amount = goal.target - goal.current
+
+    # 2. Logique predictive
+    if monthly_savings_capacity <= 0:
+        prediction_text = "Based on your current spending, you cannot save for this goal. Try reducing non-essential expenses! ⚠️"
+        months_to_goal = None
+    else:
+        months_to_goal = round(remaining_amount / monthly_savings_capacity, 1)
+        prediction_text = f"At this pace, you will reach your goal in {months_to_goal} months! 🚀"
+
+    # 3. we request AI tip to speed up the goal achievement
+    prompt = f"""
+    Saleh wants to save {remaining_amount}€ for '{goal.name}'. 
+    His current savings capacity is {monthly_savings_capacity}€/month.
+    Time estimate: {months_to_goal} months.
+    Give a one-sentence tip in English to reach this goal faster.
+    """
+    
+    ai_response = ai_client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=[prompt]
+    )
+
+    return {
+        "status": "success",
+        "prediction": prediction_text,
+        "ai_tip": ai_response.text,
+        "months": months_to_goal
+    }
