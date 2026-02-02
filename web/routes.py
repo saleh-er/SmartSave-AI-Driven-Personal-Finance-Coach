@@ -621,3 +621,49 @@ async def scan_card(file: UploadFile = File(...)):
     except Exception as e:
         traceback.print_exc()
         return {"status": "error", "message": str(e)}
+    
+    # Route for spending analysis with Gemini AI
+@router.post("/analyze-spending")
+async def analyze_spending(db: Session = Depends(get_db)):
+    """
+    AI-powered anomaly detection to find unusual spending patterns.
+    """
+    try:
+        # 1. Fetch recent transactions for context
+        transactions = db.query(Transaction).order_by(Transaction.date.desc()).limit(20).all()
+        
+        if not transactions:
+            return {"status": "info", "message": "Not enough data for analysis."}
+
+        # 2. Prepare the summary for Gemini
+        summary = "\n".join([f"{t.merchant}: {t.amount}€ ({t.category})" for t in transactions])
+        
+        prompt = f"""
+        Analyze these recent transactions for Saleh:
+        {summary}
+        
+        Budget Limit: {USER_CONFIG['monthly_budget']}€
+        
+        Your task:
+        Identify any financial anomalies (e.g., unusual price spikes, suspicious merchants, 
+        or overspending in non-essential categories).
+        
+        Return ONLY a JSON object with:
+        - 'has_anomaly' (boolean)
+        - 'severity' (string: 'low', 'medium', 'high')
+        - 'reason' (string in English)
+        - 'advice' (string in English)
+        """
+
+        # 3. Call Gemini AI
+        response = ai_client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[prompt]
+        )
+        
+        # 4. Parse and return the AI analysis
+        analysis = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
+        return {"status": "success", "analysis": analysis}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

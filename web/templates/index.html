@@ -75,6 +75,24 @@
             </div>
             <input type="file" id="card-upload" accept="image/*" capture="environment" style="display: none;" onchange="processCardScan(this)">
         </div>
+  
+
+        
+
+<div id="ai-alert" class="glass-card" style="display:none; border-left: 5px solid #EF4444; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="background: #FEE2E2; padding: 10px; border-radius: 50%;">
+            <i class="fas fa-robot" style="color: #EF4444;"></i>
+        </div>
+        <div>
+            <h4 style="margin: 0; color: #1F2937;">AI Security Alert</h4>
+            <p id="anomaly-text" style="margin: 5px 0 0 0; font-size: 0.85rem; color: #4B5563;"></p>
+        </div>
+    </div>
+</div>
+
+
+
 
         <div class="transaction-form-inner">
             <input type="text" id="card-bank" placeholder="Bank Name (ex: Revolut)">
