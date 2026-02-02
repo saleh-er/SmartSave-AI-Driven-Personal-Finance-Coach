@@ -19,6 +19,14 @@
         <main class="goals-container" style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 150px;">
             
             {% for goal in goals %}
+             <div class="ai-prediction-box" id="prediction-{{ goal.id }}" 
+                 style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;">
+                <i class="fas fa-magic" style="color: #fbbf24;"></i> 
+                <span id="text-{{ goal.id }}">Calculating prediction...</span>
+              </div>
+
+
+
             <div class="glass-card goal-card" style="position: relative; overflow: hidden;">
                 <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: {{ goal.color }};"></div>
                 
@@ -180,6 +188,27 @@
                 planText.innerText = "Error contacting coach.";
             }
         }
+
+
+
+        // Appel automatique au chargement
+        async function loadPrediction(goalId) {
+        try {
+            const response = await fetch(`/goal-prediction/${goalId}`);
+            const data = await response.json();
+            const element = document.getElementById('text-' + goalId);
+            if (element) element.innerText = data.prediction;
+        } catch (e) {
+            console.error("Error loading prediction", e);
+        }
+      }
+
+    // On lance les prédictions pour chaque objectif au chargement
+        window.onload = () => {
+            { % for goal in goals %}
+                 loadPrediction({{ goal.id }});
+            {% endfor %}
+ };
     </script>
 </body>
 </html>

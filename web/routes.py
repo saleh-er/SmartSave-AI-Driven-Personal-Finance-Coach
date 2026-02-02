@@ -668,7 +668,7 @@ async def analyze_spending(db: Session = Depends(get_db)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
     
-    
+
     #route for goals prediction
 
 @router.get("/goal-prediction/{goal_id}")
@@ -687,6 +687,7 @@ async def goal_prediction(goal_id: int, db: Session = Depends(get_db)):
 
     # 2. Logique predictive
     if monthly_savings_capacity <= 0:
+        months_to_goal = 999
         prediction_text = "Based on your current spending, you cannot save for this goal. Try reducing non-essential expenses! ⚠️"
         months_to_goal = None
     else:
