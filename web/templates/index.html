@@ -77,7 +77,7 @@
         </div>
   
 
-        
+
 
 <div id="ai-alert" class="glass-card" style="display:none; border-left: 5px solid #EF4444; margin-bottom: 20px;">
     <div style="display: flex; align-items: center; gap: 15px;">
@@ -391,6 +391,34 @@
         else if (score >= 50) { ring.style.borderColor = "#F59E0B"; aiText.innerHTML = "Careful, budget is tight."; }
         else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Emergency! Check spendings. ⚠️"; }
     };
+
+//analyse anomalies
+async function checkFinancialAnomalies() {
+    try {
+        const response = await fetch('/analyze-spending', { method: 'POST' });
+        const data = await response.json();
+        
+        const alertDiv = document.getElementById('ai-alert');
+        const alertText = document.getElementById('anomaly-text');
+        
+        if (data.status === 'success' && data.analysis.has_anomaly) {
+            alertText.innerText = data.analysis.reason + " Recommendation: " + data.analysis.advice;
+            alertDiv.style.display = 'block';
+            
+            // Change la couleur selon la sévérité
+            if (data.analysis.severity === 'high') {
+                alertDiv.style.borderLeftColor = '#EF4444'; // Rouge
+            } else {
+                alertDiv.style.borderLeftColor = '#F59E0B'; // Orange
+            }
+        } else {
+            alertDiv.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("AI Analysis failed:", error);
+    }
+}
+
     </script>
 </body>
 </html>
