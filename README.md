@@ -31,7 +31,7 @@
 * `routes.py`: Contains all endpoint logic (API endpoints) like `/add-transaction` or `/add-card`.
 * `models.py`: Defines the data structure (columns, types, relationships).
 * `templates/index.html`: The main interactive dashboard.
-* `templates/coach.html,analytics.html
+* `templates/coach.html,analytics.html, settings.html
 * `static/css/style.css`: The entire graphic charter and premium animations.
 
 ---
