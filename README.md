@@ -24,7 +24,7 @@
 
 * **Frontend (View)**: Interface built with **Jinja2**, **HTML5**, and **CSS3** (Glassmorphism). It sends `JSON` requests to the server via `fetch()`.
 * **Backend (Controller)**: **FastAPI** receives requests, processes logic (such as balance calculations or AI scanning), and communicates with the database.
-* **Database (Model)**: **SQLAlchemy** manages the `Transaction` and `BankCard` tables, ensuring the persistence of user data.
+* **Database (Model)**: **SQLAlchemy** Postgesql manages the `Transaction` and `BankCard` tables, ensuring the persistence of user data.
 
 ### 📂 Main File Structure
 * `main.py`: Application entry point and server configuration.
