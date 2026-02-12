@@ -674,12 +674,12 @@ async def analyze_spending(db: Session = Depends(get_db)):
 @router.get("/goal-prediction/{goal_id}")
 async def goal_prediction(goal_id: int, db: Session = Depends(get_db)):
     try:
-        # 1. Récupérer l'objectif
+        # 1. Retrieve the goal from the database
         goal = db.query(Goal).filter(Goal.id == goal_id).first()
         if not goal:
             return {"status": "error", "prediction": "Goal not found"}
 
-        # 2. Calculer les finances actuelles
+        # 2. Calculate monthly savings capacity
         db_tx = db.query(Transaction).all()
         # Assure-toi que SerenityEngine est bien importé
         analysis = SerenityEngine.analyze_finances(db_tx, budget=USER_CONFIG["monthly_budget"])

@@ -19,8 +19,7 @@ class AICoach:
         "Keep your advice practical, short, and motivating."
         """
 
-        # 2. On prépare la liste des messages pour l'API
-        # On commence toujours par le message système
+
         messages = [{"role": "system", "content": system_instructions}]
 
         # 3. GESTION DE LA MÉMOIRE : 
