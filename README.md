@@ -24,13 +24,14 @@
 
 * **Frontend (View)**: Interface built with **Jinja2**, **HTML5**, and **CSS3** (Glassmorphism). It sends `JSON` requests to the server via `fetch()`.
 * **Backend (Controller)**: **FastAPI** receives requests, processes logic (such as balance calculations or AI scanning), and communicates with the database.
-* **Database (Model)**: **SQLAlchemy** manages the `Transaction` and `BankCard` tables, ensuring the persistence of user data.
+* **Database (Model)**: **SQLAlchemy** Postgesql manages the `Transaction` and `BankCard` tables, ensuring the persistence of user data.
 
 ### 📂 Main File Structure
 * `main.py`: Application entry point and server configuration.
 * `routes.py`: Contains all endpoint logic (API endpoints) like `/add-transaction` or `/add-card`.
 * `models.py`: Defines the data structure (columns, types, relationships).
 * `templates/index.html`: The main interactive dashboard.
+* `templates/coach.html,analytics.html, settings.html
 * `static/css/style.css`: The entire graphic charter and premium animations.
 
 ---
@@ -54,3 +55,5 @@ When an expense is added:
  ### 🛠️ Common Fixes
 If you encounter a `rebase-merge` error on Windows, run:
 `Remove-Item -Force -Recurse .git/rebase-merge`
+### author: 
+ERRAGRAGUI Saleh 
