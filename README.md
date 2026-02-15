@@ -55,5 +55,6 @@ When an expense is added:
  ### 🛠️ Common Fixes
 If you encounter a `rebase-merge` error on Windows, run:
 `Remove-Item -Force -Recurse .git/rebase-merge`
+<<<<<<< HEAD
 ### author: 
 ERRAGRAGUI Saleh 
