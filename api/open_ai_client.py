@@ -12,7 +12,7 @@ class AICoach:
     def get_financial_advice(self, chat_input, score, transactions):
         # 1. On définit les instructions de base (System Prompt)
         system_instructions = f"""
-        "You are SmartSave AI, Saleh's personal financial coach. "
+        "You are SmartSave AI, personal financial coach. "
         f"Context: Serenity Score is {score}/100. Recent activity: {transactions}. "
         "STRICT RULE: Always respond in the SAME LANGUAGE as the user's last message. "
         "If the user speaks English, reply in English. If they speak French, reply in French. "
