@@ -1,11 +1,6 @@
-# Environnement virtuel
-venv/
-.env
-
-# Python cache
+.venv/
 __pycache__/
 *.pyc
-
-# IDE
-.vscode/
-.idea/
+.env
+*.db
+user_settings.json
