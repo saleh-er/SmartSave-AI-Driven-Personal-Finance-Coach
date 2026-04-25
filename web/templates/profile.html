@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSave — Profil</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080E1A;color:#F1F5F9;font-family:Inter,-apple-system,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;padding-bottom:90px}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#080E1A;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:100}
+.app-header h1{font-size:1.1rem;font-weight:800}
+.back-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);color:#F1F5F9;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.9rem}
+.profile-hero{padding:28px 20px 24px;display:flex;flex-direction:column;align-items:center;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(16,185,129,0.05));border-bottom:1px solid rgba(255,255,255,0.07)}
+.avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#10B981);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;margin-bottom:14px;border:3px solid rgba(255,255,255,0.1)}
+.profile-name{font-size:1.3rem;font-weight:800;margin-bottom:4px}
+.profile-email{font-size:0.78rem;color:#64748b;margin-bottom:16px}
+.profile-stats{display:flex;gap:24px}
+.pstat{text-align:center}
+.pstat-value{font-size:1.1rem;font-weight:800}
+.pstat-label{font-size:0.62rem;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+.section{padding:20px 20px 0}
+.section-title{font-size:0.65rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px}
+.info-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:18px;overflow:hidden;margin-bottom:16px}
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:background 0.2s}
+.info-row:last-child{border-bottom:none}
+.info-row:hover{background:rgba(255,255,255,0.03)}
+.info-left{display:flex;align-items:center;gap:12px}
+.info-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0}
+.info-label{font-size:0.75rem;color:#64748b;margin-bottom:2px}
+.info-value{font-size:0.9rem;font-weight:600}
+.info-arrow{color:#475569;font-size:0.8rem}
+.score-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700}
+.danger-card{background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.12);border-radius:18px;overflow:hidden;margin-bottom:16px}
+.danger-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;transition:background 0.2s}
+.danger-row:hover{background:rgba(239,68,68,0.05)}
+.danger-label{font-size:0.88rem;font-weight:600;color:#EF4444}
+.btn-logout{width:100%;padding:14px;border-radius:14px;border:none;background:rgba(239,68,68,0.1);color:#EF4444;font-weight:700;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.2s}
+.btn-logout:hover{background:rgba(239,68,68,0.18)}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(8,14,26,0.97);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.07);display:flex;padding:8px 16px 20px;z-index:200}
+.nav-link{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#64748b;padding:8px 4px;border-radius:12px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.nav-link i{font-size:1.1rem}.nav-link.active{color:#6366F1}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:430px;max-height:85vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:1.05rem;font-weight:800;margin-bottom:18px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-label{font-size:0.72rem;color:#64748b;font-weight:600}
+.form-input,.form-select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#F1F5F9;padding:12px 14px;font-size:0.88rem;outline:none;width:100%;transition:border-color 0.2s}
+.form-input:focus,.form-select:focus{border-color:#6366F1}
+.btn-full{width:100%;padding:14px;border-radius:14px;font-size:0.92rem;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,#6366F1,#10B981);color:white;margin-top:4px}
+#notif-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-left:3px solid #10B981;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:0.85rem}
+    </style>
+</head>
+<body>
+<div id="notif-container"></div>
+
+<!-- MODAL ÉDITION PROFIL -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Modifier le profil ✏️</div>
+        <div class="form-group">
+            <label class="form-label">Nom complet</label>
+            <input type="text" id="edit-name" class="form-input" value="{{ user.full_name }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Revenu mensuel (€)</label>
+            <input type="number" id="edit-income" class="form-input" value="{{ user.monthly_income|int }}" min="0">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Situation</label>
+            <select id="edit-situation" class="form-select">
+                <option value="employee" {{ "selected" if user.situation == "employee" }}>💼 Salarié</option>
+                <option value="student" {{ "selected" if user.situation == "student" }}>📚 Étudiant</option>
+                <option value="freelance" {{ "selected" if user.situation == "freelance" }}>💻 Freelance</option>
+                <option value="retired" {{ "selected" if user.situation == "retired" }}>🌴 Retraité</option>
+            </select>
+        </div>
+        <button class="btn-full" onclick="saveProfile()">
+            <i class="fas fa-check"></i> Enregistrer
+        </button>
+    </div>
+</div>
+
+<!-- MODAL SOLDE -->
+<div class="modal-overlay" id="balanceModal">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Mettre à jour le solde 💰</div>
+        <div class="form-group">
+            <label class="form-label">Solde actuel (€) — négatif si découvert</label>
+            <input type="number" id="edit-balance" class="form-input" value="{{ user.current_balance }}" step="0.01" placeholder="Ex: -196.76">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Autorisation de découvert (€)</label>
+            <input type="number" id="edit-overdraft" class="form-input" value="{{ user.overdraft_limit }}" step="0.01" placeholder="Ex: 300">
+        </div>
+        <button class="btn-full" onclick="saveBalance()">
+            <i class="fas fa-check"></i> Enregistrer
+        </button>
+    </div>
+</div>
+
+<div class="app">
+    <header class="app-header">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h1>Mon Profil</h1>
+        <button onclick="openModal('editModal')" style="background:none;border:none;color:#6366F1;font-size:0.82rem;font-weight:700;cursor:pointer;">
+            <i class="fas fa-pen"></i> Modifier
+        </button>
+    </header>
+
+    <!-- HERO -->
+    <div class="profile-hero">
+        <div class="avatar">{{ user.full_name[0]|upper }}</div>
+        <div class="profile-name">{{ user.full_name }}</div>
+        <div class="profile-email">{{ user.email }}</div>
+
+    </div>
+
+    <!-- INFOS PERSONNELLES -->
+    <div class="section">
+        <div class="section-title">Informations personnelles</div>
+        <div class="info-card">
+            <div class="info-row" onclick="openModal('editModal')">
+                <div class="info-left">
+                    <div class="info-icon" style="background:rgba(99,102,241,0.12);color:#6366F1;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <div class="info-label">Nom complet</div>
+                        <div class="info-value">{{ user.full_name }}</div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right info-arrow"></i>
+            </div>
+            <div class="info-row" onclick="openModal('editModal')">
+                <div class="info-left">
+                    <div class="info-icon" style="background:rgba(16,185,129,0.12);color:#10B981;">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div>
+                        <div class="info-label">Email</div>
+                        <div class="info-value">{{ user.email }}</div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right info-arrow"></i>
+            </div>
+            <div class="info-row" onclick="openModal('editModal')">
+                <div class="info-left">
+                    <div class="info-icon" style="background:rgba(245,158,11,0.12);color:#F59E0B;">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div>
+                        <div class="info-label">Situation</div>
+                        <div class="info-value">
+                            {{ "💼 Salarié" if user.situation == "employee" else
+                               "📚 Étudiant" if user.situation == "student" else
+                               "💻 Freelance" if user.situation == "freelance" else
+                               "🌴 Retraité" }}
+                        </div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right info-arrow"></i>
+            </div>
+            <div class="info-row" onclick="openModal('editModal')">
+                <div class="info-left">
+                    <div class="info-icon" style="background:rgba(99,102,241,0.12);color:#6366F1;">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div>
+                        <div class="info-label">Revenu mensuel</div>
+                        <div class="info-value">{{ user.monthly_income|int }}€ / mois</div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right info-arrow"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- DÉCONNEXION -->
+    <div class="section" style="padding-bottom:20px;">
+        <div class="danger-card">
+            <div class="danger-row" onclick="confirmLogout()">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="info-icon" style="background:rgba(239,68,68,0.12);color:#EF4444;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-right-from-bracket"></i>
+                    </div>
+                    <div class="danger-label">Se déconnecter</div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:#EF4444;font-size:0.8rem;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/" class="nav-link"><i class="fas fa-home"></i>Home</a>
+    <a href="/transactions" class="nav-link"><i class="fas fa-receipt"></i>Dépenses</a>
+    <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i>Stats</a>
+    <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i>Coach</a>
+    <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i>Objectifs</a>
+</nav>
+
+<script>
+function showNotif(msg, type="success") {
+    const c = document.getElementById("notif-container");
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.style.borderLeftColor = type === "error" ? "#EF4444" : "#10B981";
+    t.innerHTML = `<i class="fas fa-${type==="error"?"xmark":"check"}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+
+document.querySelectorAll(".modal-overlay").forEach(o => {
+    o.addEventListener("click", e => { if(e.target === o) o.classList.remove("open"); });
+});
+
+async function saveProfile() {
+    const r = await fetch("/update-profile", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            full_name: document.getElementById("edit-name").value,
+            monthly_income: parseFloat(document.getElementById("edit-income").value) || 0,
+            situation: document.getElementById("edit-situation").value
+        })
+    });
+    const d = await r.json();
+    if (d.status === "success") {
+        showNotif("Profil mis à jour !");
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        showNotif("Erreur", "error");
+    }
+}
+
+async function saveBalance() {
+    const r = await fetch("/update-profile", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            current_balance: parseFloat(document.getElementById("edit-balance").value) || 0,
+            overdraft_limit: parseFloat(document.getElementById("edit-overdraft").value) || 0
+        })
+    });
+    const d = await r.json();
+    if (d.status === "success") {
+        showNotif("Solde mis à jour !");
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        showNotif("Erreur", "error");
+    }
+}
+
+function confirmLogout() {
+    if (confirm("Voulez-vous vous déconnecter ?")) {
+        window.location.href = "/logout";
+    }
+}
+</script>
+</body>
+</html>

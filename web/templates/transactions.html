@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSave — Dépenses</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080E1A;color:#F1F5F9;font-family:Inter,-apple-system,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;padding-bottom:90px}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#080E1A;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:100}
+.app-header h1{font-size:1.1rem;font-weight:800}
+.back-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);color:#F1F5F9;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.9rem}
+.summary-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:16px 20px;background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(16,185,129,0.04));border-bottom:1px solid rgba(255,255,255,0.07)}
+.sum-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px;text-align:center}
+.sum-label{font-size:0.6rem;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.sum-value{font-size:1rem;font-weight:800}
+.filters{display:flex;gap:8px;padding:14px 20px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid rgba(255,255,255,0.07)}
+.filter-chip{white-space:nowrap;padding:7px 14px;border-radius:20px;font-size:0.75rem;font-weight:600;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.04);color:#94a3b8;cursor:pointer;transition:all 0.2s}
+.filter-chip.active{background:rgba(99,102,241,0.15);border-color:#6366F1;color:#6366F1}
+.add-bar{padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.btn-add{width:100%;padding:12px;border-radius:14px;font-size:0.88rem;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,#6366F1,#10B981);color:white;display:flex;align-items:center;justify-content:center;gap:8px}
+.tx-group{padding:0 20px}
+.tx-date-label{font-size:0.65rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;padding:14px 0 8px}
+.tx-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 14px;margin-bottom:8px;transition:border-color 0.2s}
+.tx-item:hover{border-color:rgba(255,255,255,0.12)}
+.tx-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-name{font-size:0.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-cat{font-size:0.7rem;color:#64748b;margin-top:2px}
+.tx-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.tx-amount{font-size:0.92rem;font-weight:700;color:#EF4444}
+.tx-badge{font-size:0.55rem;font-weight:700;padding:2px 8px;border-radius:8px}
+.badge-essential{background:rgba(16,185,129,0.12);color:#10B981}
+.badge-non{background:rgba(239,68,68,0.1);color:#EF4444}
+.tx-delete{background:none;border:none;color:#475569;cursor:pointer;padding:4px 8px;font-size:0.8rem;opacity:0;transition:opacity 0.2s}
+.tx-item:hover .tx-delete{opacity:1}
+.empty-state{text-align:center;padding:60px 20px;color:#64748b}
+.empty-state i{font-size:2.5rem;margin-bottom:16px;display:block;opacity:0.4}
+.empty-state h3{font-size:0.95rem;font-weight:700;margin-bottom:6px}
+.empty-state p{font-size:0.8rem;opacity:0.7}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(8,14,26,0.97);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.07);display:flex;padding:8px 16px 20px;z-index:200}
+.nav-link{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#64748b;padding:8px 4px;border-radius:12px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.nav-link i{font-size:1.1rem}.nav-link.active{color:#6366F1}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:430px;max-height:85vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:1.05rem;font-weight:800;margin-bottom:18px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-label{font-size:0.72rem;color:#64748b;font-weight:600}
+.form-input,.form-select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#F1F5F9;padding:12px 14px;font-size:0.88rem;outline:none;width:100%;transition:border-color 0.2s}
+.form-input:focus,.form-select:focus{border-color:#6366F1}
+.btn-full{width:100%;padding:14px;border-radius:14px;font-size:0.92rem;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,#6366F1,#10B981);color:white;margin-top:4px}
+.checkbox-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.checkbox-row input{width:18px;height:18px;cursor:pointer}
+.checkbox-row label{font-size:0.82rem;color:#94a3b8;cursor:pointer}
+#notif-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-left:3px solid #10B981;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:0.85rem}
+    </style>
+</head>
+<body>
+<div id="notif-container"></div>
+
+<!-- MODAL AJOUTER -->
+<div class="modal-overlay" id="txModal">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Nouvelle dépense 💸</div>
+        <div class="form-group">
+            <label class="form-label">Marchand / Description</label>
+            <input type="text" id="tx-merchant" class="form-input" placeholder="Ex: Carrefour">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Montant (€)</label>
+            <input type="number" id="tx-amount" class="form-input" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Catégorie</label>
+            <select id="tx-category" class="form-select">
+                <option value="Food">🍔 Alimentation</option>
+                <option value="Transport">🚗 Transport</option>
+                <option value="Housing">🏠 Logement</option>
+                <option value="Bills">💡 Factures</option>
+                <option value="Shopping">🛍️ Shopping</option>
+                <option value="Health">❤️ Santé</option>
+                <option value="Entertainment">🎮 Loisirs</option>
+                <option value="Subs">📺 Abonnements</option>
+                <option value="Transfer">💸 Transfert</option>
+                <option value="Other">📦 Autre</option>
+            </select>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="tx-essential" checked>
+            <label for="tx-essential">Dépense essentielle</label>
+        </div>
+        <button class="btn-full" onclick="submitTx()">
+            <i class="fas fa-plus"></i> Ajouter la dépense
+        </button>
+    </div>
+</div>
+
+<div class="app">
+    <header class="app-header">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h1>Mes Dépenses</h1>
+        <div style="width:36px"></div>
+    </header>
+
+    <!-- RÉSUMÉ -->
+    <div class="summary-bar">
+        <div class="sum-card">
+            <div class="sum-label">Total</div>
+            <div class="sum-value" style="color:#EF4444;">{{ total_spent|int }}€</div>
+        </div>
+        <div class="sum-card">
+            <div class="sum-label">Opérations</div>
+            <div class="sum-value" style="color:#6366F1;">{{ transactions|length }}</div>
+        </div>
+        <div class="sum-card">
+            <div class="sum-label">Budget</div>
+            <div class="sum-value" style="color:#10B981;">{{ budget|int }}€</div>
+        </div>
+    </div>
+
+    <!-- FILTRES CATÉGORIES -->
+    <div class="filters">
+        <div class="filter-chip active" onclick="filterCat(this, '')">Tout</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Food')">🍔 Alim.</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Transport')">🚗 Transport</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Housing')">🏠 Logement</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Bills')">💡 Factures</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Shopping')">🛍️ Shopping</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Subs')">📺 Abonnements</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Transfer')">💸 Transferts</div>
+        <div class="filter-chip" onclick="filterCat(this, 'Other')">📦 Autre</div>
+    </div>
+
+    <!-- IMPORT -->
+    <div style="padding:12px 20px 0;display:flex;gap:8px;">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:10px;cursor:pointer;font-size:0.75rem;font-weight:700;color:#6366F1;">
+            <span>CSV</span> Import
+            <input type="file" accept=".csv" style="display:none" onchange="importFile(this,'csv')">
+        </label>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:10px;cursor:pointer;font-size:0.75rem;font-weight:700;color:#EF4444;">
+            <span>PDF</span> Import
+            <input type="file" accept=".pdf" style="display:none" onchange="importFile(this,'pdf')">
+        </label>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:10px;cursor:pointer;font-size:0.75rem;font-weight:700;color:#10B981;">
+            <i class="fas fa-camera"></i> Scanner
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="importFile(this,'image')">
+        </label>
+    </div>
+    <div id="import-status" style="display:none;margin:8px 20px 0;padding:10px 14px;border-radius:12px;font-size:0.8rem;"></div>
+
+    <!-- BOUTON AJOUTER -->
+    <div class="add-bar">
+        <button class="btn-add" onclick="openModal()">
+            <i class="fas fa-plus"></i> Ajouter une dépense
+        </button>
+    </div>
+
+    <!-- LISTE TRANSACTIONS -->
+    <div class="tx-group" id="tx-list">
+        {% if transactions %}
+            {% for tx in transactions %}
+            <div class="tx-item" data-cat="{{ tx.category }}">
+                <div class="tx-icon" style="background:{{ 
+                    'rgba(16,185,129,0.12)' if tx.category in ['Food','Health'] else 
+                    'rgba(99,102,241,0.12)' if tx.category in ['Transport','Subs'] else 
+                    'rgba(245,158,11,0.12)' if tx.category in ['Bills','Housing'] else 
+                    'rgba(239,68,68,0.12)' if tx.category == 'Transfer' else
+                    'rgba(100,116,139,0.12)' }}">
+                    {{ "🍔" if tx.category == "Food" else 
+                       "🚗" if tx.category == "Transport" else 
+                       "🏠" if tx.category == "Housing" else 
+                       "💡" if tx.category == "Bills" else 
+                       "🛍️" if tx.category == "Shopping" else 
+                       "❤️" if tx.category == "Health" else 
+                       "🎮" if tx.category == "Entertainment" else 
+                       "📺" if tx.category == "Subs" else 
+                       "💸" if tx.category == "Transfer" else "📦" }}
+                </div>
+                <div class="tx-info">
+                    <div class="tx-name">{{ tx.merchant }}</div>
+                    <div class="tx-cat">{{ tx.category }} • {{ tx.date.strftime("%d %b %Y") }}</div>
+                </div>
+                <div class="tx-right">
+                    <span class="tx-amount">-{{ "%.2f"|format(tx.amount) }}€</span>
+                    <span class="tx-badge {{ 'badge-essential' if tx.is_essential else 'badge-non' }}">
+                        {{ "Essentiel" if tx.is_essential else "Non essentiel" }}
+                    </span>
+                </div>
+                <button class="tx-delete" onclick="deleteTx({{ tx.id }})">
+                    <i class="fas fa-trash-can"></i>
+                </button>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <h3>Aucune dépense</h3>
+                <p>Importez un relevé depuis la page d'accueil ou ajoutez manuellement</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/" class="nav-link"><i class="fas fa-home"></i>Home</a>
+    <a href="/transactions" class="nav-link active"><i class="fas fa-receipt"></i>Dépenses</a>
+    <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i>Stats</a>
+    <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i>Coach</a>
+    <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i>Objectifs</a>
+</nav>
+
+<script>
+function showNotif(msg, type="success") {
+    const c = document.getElementById("notif-container");
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.style.borderLeftColor = type === "error" ? "#EF4444" : "#10B981";
+    t.innerHTML = `<i class="fas fa-${type==="error"?"xmark":"check"}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+
+function openModal() {
+    document.getElementById("txModal").classList.add("open");
+}
+
+document.getElementById("txModal").addEventListener("click", e => {
+    if (e.target === document.getElementById("txModal"))
+        document.getElementById("txModal").classList.remove("open");
+});
+
+function filterCat(el, cat) {
+    document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    document.querySelectorAll(".tx-item").forEach(item => {
+        item.style.display = (!cat || item.dataset.cat === cat) ? "flex" : "none";
+    });
+}
+
+async function importFile(input, type) {
+    if (!input.files || !input.files[0]) return;
+    const status = document.getElementById("import-status");
+    status.style.display = "block";
+    status.style.background = "rgba(99,102,241,0.08)";
+    status.style.color = "#6366F1";
+    status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyse IA en cours...';
+    const formData = new FormData();
+    formData.append("file", input.files[0]);
+    const routes = {csv: "/import-csv", pdf: "/import-pdf", image: "/import-statement-image"};
+    try {
+        const r = await fetch(routes[type], {method: "POST", body: formData});
+        const d = await r.json();
+        if (d.status === "success") {
+            status.style.background = "rgba(16,185,129,0.08)";
+            status.style.color = "#10B981";
+            status.innerHTML = '<i class="fas fa-check"></i> ' + d.message;
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            status.style.background = "rgba(239,68,68,0.08)";
+            status.style.color = "#EF4444";
+            status.innerHTML = '<i class="fas fa-xmark"></i> ' + d.message;
+        }
+    } catch(e) {
+        status.style.color = "#EF4444";
+        status.innerHTML = "Erreur. Reessayez.";
+    }
+}
+
+async function submitTx() {
+    const merchant = document.getElementById("tx-merchant").value.trim();
+    const amount = document.getElementById("tx-amount").value;
+    const category = document.getElementById("tx-category").value;
+    const is_essential = document.getElementById("tx-essential").checked;
+    if (!merchant || !amount) { showNotif("Remplissez tous les champs", "error"); return; }
+    const r = await fetch("/add-transaction", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({merchant, amount: parseFloat(amount), category, is_essential})
+    });
+    const d = await r.json();
+    if (d.status === "success") {
+        showNotif("Dépense ajoutée !");
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        showNotif("Erreur", "error");
+    }
+}
+
+async function deleteTx(id) {
+    if (!confirm("Supprimer cette transaction ?")) return;
+    const r = await fetch(`/delete-transaction/${id}`, {method: "DELETE"});
+    const d = await r.json();
+    if (d.status === "success") {
+        showNotif("Transaction supprimée");
+        setTimeout(() => location.reload(), 800);
+    }
+}
+</script>
+</body>
+</html>

@@ -3,220 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSave - Analytics</title>
+    <title>SmartSave — Analytics</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080E1A;color:#F1F5F9;font-family:Inter,-apple-system,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;padding-bottom:90px}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#080E1A;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:100}
+.app-header h1{font-size:1.1rem;font-weight:800}
+.back-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);color:#F1F5F9;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.9rem}
+.period-tabs{display:flex;gap:8px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.period-btn{flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.04);color:#64748b;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s}
+.period-btn.active{background:rgba(99,102,241,0.15);border-color:#6366F1;color:#6366F1}
+.total-section{padding:20px;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(16,185,129,0.05));border-bottom:1px solid rgba(255,255,255,0.07)}
+.total-label{font-size:0.65rem;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.total-amount{font-size:2.2rem;font-weight:900;letter-spacing:-1px}
+.total-sub{font-size:0.75rem;color:#64748b;margin-top:4px}
+.chart-section{padding:20px}
+.chart-title{font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.chart-wrap{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:16px;height:200px}
+.section{padding:16px 20px 0}
+.section-title{font-size:0.65rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px}
+.cat-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.cat-item:last-child{border-bottom:none}
+.cat-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-size:0.88rem;font-weight:700}
+.cat-bar-wrap{height:4px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:6px;overflow:hidden}
+.cat-bar{height:100%;border-radius:2px;transition:width 0.8s ease}
+.cat-right{text-align:right;flex-shrink:0}
+.cat-amount{font-size:0.9rem;font-weight:800}
+.cat-pct{font-size:0.65rem;color:#64748b;margin-top:2px}
+.cat-badge{font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:3px;display:inline-block}
+.report-section{padding:16px 20px;margin-bottom:16px}
+.report-card{background:rgba(255,255,255,0.03);border:1px solid rgba(99,102,241,0.2);border-radius:18px;padding:18px}
+.report-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.report-title{font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.btn-generate{padding:8px 16px;border-radius:10px;background:linear-gradient(135deg,#6366F1,#10B981);color:white;border:none;font-size:0.75rem;font-weight:700;cursor:pointer;transition:opacity 0.2s}
+.btn-generate:hover{opacity:0.85}
+.btn-generate:disabled{opacity:0.5;cursor:not-allowed}
+.report-body{font-size:0.82rem;line-height:1.65;color:#94a3b8;display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)}
+.report-loader{display:none;text-align:center;padding:16px;color:#64748b}
+.report-loader i{font-size:1.2rem;margin-bottom:8px;display:block}
+.report-loader p{font-size:0.75rem}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(8,14,26,0.97);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.07);display:flex;padding:8px 16px 20px;z-index:200}
+.nav-link{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#64748b;padding:8px 4px;border-radius:12px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.nav-link i{font-size:1.1rem}.nav-link.active{color:#6366F1}
+.empty-state{text-align:center;padding:40px 20px;color:#64748b}
+.empty-state i{font-size:2rem;margin-bottom:12px;display:block;opacity:0.4}
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <header class="brand-header">
-            <h1>Analytics</h1>
-            <p>Spending patterns & insights</p>
-        </header>
+<div class="app">
+    <header class="app-header">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h1>Analytiques</h1>
+        <div style="width:36px"></div>
+    </header>
 
-        <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 25px;">
-            <button onclick="location.href='/analytics?period=week'" 
-                    class="tab" 
-                    style="flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
-                    background: {{ 'var(--primary-gradient)' if period == 'week' else 'var(--glass-bg)' }}; 
-                    color: white; font-weight: 600; border: 1px solid {{ 'transparent' if period == 'week' else 'var(--glass-border)' }};">
-                Week
-            </button>
-            <button onclick="location.href='/analytics?period=month'" 
-                    class="tab" 
-                    style="flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s;
-                    background: {{ 'var(--primary-gradient)' if period == 'month' else 'var(--glass-bg)' }}; 
-                    color: white; font-weight: 600; border: 1px solid {{ 'transparent' if period == 'month' else 'var(--glass-border)' }};">
-                Month
-            </button>
-        </div>
-
-        <div class="glass-card" style="padding: 25px; margin-bottom: 25px;">
-            <span style="color: var(--text-secondary); font-size: 0.9rem; letter-spacing: 0.5px;">Total Spending</span>
-            <h2 style="font-size: 2.2rem; margin: 10px 0; font-weight: 800;">€{{ total_spent }}</h2>
-            
-            <div style="height: 250px; margin-top: 20px;">
-                <canvas id="spendingChart"></canvas>
-            </div>
-        </div>
-
-        <div class="glass-card" style="margin-bottom: 25px; border: 1px solid var(--accent-teal); position: relative;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="font-size: 1.1rem; margin: 0; color: white;">
-                    <i class="fas fa-robot" style="color: var(--accent-teal);"></i> AI Financial Report
-                </h3>
-                <div style="display: flex; gap: 10px; position: relative; z-index: 100;">
-                    <button id="btn-copy" onclick="copyReport()" class="action-btn secondary" 
-                            style="display: none; padding: 8px 15px; font-size: 0.8rem; width: auto; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">
-                        <i class="fas fa-copy"></i> Copy
-                    </button>
-                    <button id="btn-report" onclick="getAIReport()" class="action-btn primary" 
-                            style="padding: 8px 15px; font-size: 0.8rem; width: auto; cursor: pointer;">
-                        Generate
-                    </button>
-                </div>
-            </div>
-            
-            <div id="report-content" style="display: none; font-size: 0.9rem; line-height: 1.6; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; position: relative; z-index: 1;">
-            </div>
-
-            <div id="report-loader" style="display: none; text-align: center; padding: 20px;">
-                <i class="fas fa-circle-notch fa-spin" style="font-size: 1.5rem; color: var(--accent-teal);"></i>
-                <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-secondary);">Analyzing your spending habits...</p>
-            </div>
-        </div>
-
-        <div class="glass-card" style="margin-bottom: 120px; padding: 20px;">
-            <h3 style="margin-bottom: 25px; font-size: 1.1rem; font-weight: 800;">Top Categories</h3>
-            
-            <div class="insights-list">
-                {% if category_insights %}
-                    {% for cat in category_insights %}
-                    <div class="insight-item" style="margin-bottom: 25px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 15px;">
-                                <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: {{ cat.color }}; border: 1px solid rgba(255,255,255,0.1);">
-                                    <i class="fas {{ cat.icon }}"></i>
-                                </div>
-                                <div>
-                                    <p style="margin: 0; font-weight: 700; font-size: 1rem; color: white;">{{ cat.name }}</p>
-                                    <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">{{ cat.status }} • €{{ cat.amount }}</p>
-                                </div>
-                            </div>
-                            <span style="font-weight: 800; color: {{ cat.color }}; font-size: 1.1rem;">{{ cat.percentage }}%</span>
-                        </div>
-                        
-                        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-                            <div style="width: {{ cat.percentage }}%; height: 100%; background: {{ cat.color }}; box-shadow: 0 0 12px {{ cat.color }}44; border-radius: 4px; transition: width 1s ease-in-out;"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">No category data yet.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <nav class="bottom-nav">
-            <a href="/" class="nav-link"><i class="fas fa-home"></i> <span>Home</span></a>
-            <a href="/analytics" class="nav-link active"><i class="fas fa-chart-line"></i> <span>Stats</span></a>
-            <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span></a>
-            <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i> <span>Goals</span></a>
-        </nav>
+    <!-- PÉRIODE -->
+    <div class="period-tabs">
+        <button class="period-btn {{ 'active' if period == 'week' else '' }}" onclick="location.href='/analytics?period=week'">
+            <i class="fas fa-calendar-week"></i> Cette semaine
+        </button>
+        <button class="period-btn {{ 'active' if period == 'month' else '' }}" onclick="location.href='/analytics?period=month'">
+            <i class="fas fa-calendar"></i> Ce mois
+        </button>
     </div>
 
-    <script>
-        // Graphique Chart.js
-        const ctx = document.getElementById('spendingChart').getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, '#6366F1'); 
-        gradient.addColorStop(1, '#10B981'); 
+    <!-- TOTAL -->
+    <div class="total-section">
+        <div class="total-label">Total dépensé</div>
+        <div class="total-amount">{{ total_spent }}€</div>
+        <div class="total-sub">{{ "7 derniers jours" if period == "week" else "30 derniers jours" }}</div>
+    </div>
 
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ labels|tojson }},
-                datasets: [{
-                    label: 'Spending',
-                    data: {{ values|tojson }},
-                    backgroundColor: gradient,
-                    borderRadius: 8,
-                    borderSkipped: false,
-                }]
+    <!-- GRAPHIQUE -->
+    <div class="chart-section">
+        <div class="chart-title">Évolution des dépenses</div>
+        <div class="chart-wrap">
+            <canvas id="spendingChart"></canvas>
+        </div>
+    </div>
+
+    <!-- CATÉGORIES -->
+    <div class="section">
+        <div class="section-title">Répartition par catégorie</div>
+        {% if category_insights %}
+            {% for cat in category_insights %}
+            <div class="cat-item">
+                <div class="cat-icon" style="background:{{ 
+                    'rgba(16,185,129,0.12)' if cat.name in ['Food','Health'] else 
+                    'rgba(99,102,241,0.12)' if cat.name in ['Transport','Subs'] else 
+                    'rgba(245,158,11,0.12)' if cat.name in ['Bills','Housing'] else 
+                    'rgba(239,68,68,0.12)' if cat.name == 'Transfer' else
+                    'rgba(100,116,139,0.12)' }}">
+                    {{ "🍔" if cat.name == "Food" else 
+                       "🚗" if cat.name == "Transport" else 
+                       "🏠" if cat.name == "Housing" else 
+                       "💡" if cat.name == "Bills" else 
+                       "🛍️" if cat.name == "Shopping" else 
+                       "❤️" if cat.name == "Health" else 
+                       "🎮" if cat.name == "Entertainment" else 
+                       "📺" if cat.name == "Subs" else 
+                       "💸" if cat.name == "Transfer" else "📦" }}
+                </div>
+                <div class="cat-info">
+                    <div class="cat-name">{{ cat.name }}</div>
+                    <div class="cat-bar-wrap">
+                        <div class="cat-bar" style="width:{{ cat.percentage }}%;background:{{ cat.color }};"></div>
+                    </div>
+                </div>
+                <div class="cat-right">
+                    <div class="cat-amount" style="color:{{ cat.color }}">{{ cat.amount }}€</div>
+                    <div class="cat-pct">{{ cat.percentage }}%</div>
+                    <span class="cat-badge" style="background:{{ 'rgba(239,68,68,0.1)' if cat.status == 'High Spending' else 'rgba(16,185,129,0.1)' }};color:{{ cat.color }}">
+                        {{ "Élevé" if cat.status == "High Spending" else "OK" }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-chart-pie"></i>
+                <p>Aucune donnée disponible</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- RAPPORT IA -->
+    <div class="report-section">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-title">
+                    <span style="font-size:1rem;">✨</span>
+                    Rapport IA mensuel
+                </div>
+                <button class="btn-generate" id="btn-gen" onclick="generateReport()">
+                    Générer
+                </button>
+            </div>
+            <div class="report-loader" id="report-loader">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>L'IA analyse vos habitudes...</p>
+            </div>
+            <div class="report-body" id="report-body"></div>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/" class="nav-link"><i class="fas fa-home"></i>Home</a>
+    <a href="/transactions" class="nav-link"><i class="fas fa-receipt"></i>Dépenses</a>
+    <a href="/analytics" class="nav-link active"><i class="fas fa-chart-line"></i>Stats</a>
+    <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i>Coach</a>
+    <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i>Objectifs</a>
+</nav>
+
+<script>
+const ctx = document.getElementById("spendingChart").getContext("2d");
+const grad = ctx.createLinearGradient(0, 0, 0, 180);
+grad.addColorStop(0, "rgba(99,102,241,0.8)");
+grad.addColorStop(1, "rgba(16,185,129,0.4)");
+
+new Chart(ctx, {
+    type: "bar",
+    data: {
+        labels: {{ labels|tojson }},
+        datasets: [{
+            data: {{ values|tojson }},
+            backgroundColor: grad,
+            borderRadius: 8,
+            borderSkipped: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {legend: {display: false}},
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {color: "rgba(255,255,255,0.04)"},
+                ticks: {color: "#64748b", font: {size: 10}, callback: v => v + "€"}
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
-                        ticks: { color: '#94a3b8', font: { size: 10 } }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }
-                    }
-                }
-            }
-        });
-
-        // Fonction pour générer le rapport IA
-        async function getAIReport() {
-            const btn = document.getElementById('btn-report');
-            const btnCopy = document.getElementById('btn-copy');
-            const loader = document.getElementById('report-loader');
-            const content = document.getElementById('report-content');
-
-            btn.disabled = true;
-            btn.style.opacity = "0.5";
-            loader.style.display = "block";
-            content.style.display = "none";
-            btnCopy.style.display = "none";
-
-            try {
-                const response = await fetch('/generate-report');
-                const data = await response.json();
-                content.innerHTML = data.report.replace(/\n/g, '<br>');
-                content.style.display = "block";
-                btnCopy.style.display = "inline-block";
-            } catch (error) {
-                content.innerText = "Error generating report. Please try again.";
-                content.style.display = "block";
-            } finally {
-                loader.style.display = "none";
-                btn.disabled = false;
-                btn.style.opacity = "1";
-                btn.innerText = "Regenerate";
+            x: {
+                grid: {display: false},
+                ticks: {color: "#94a3b8", font: {size: 10, weight: "600"}}
             }
         }
+    }
+});
 
-        // Fonction Robuste pour copier le rapport
-        function copyReport() {
-            const content = document.getElementById('report-content');
-            const btnCopy = document.getElementById('btn-copy');
-            const textToCopy = content.innerText || content.textContent;
-
-            // Tentative avec l'API moderne
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    handleCopySuccess(btnCopy);
-                }).catch(() => {
-                    fallbackCopyText(textToCopy, btnCopy);
-                });
-            } else {
-                fallbackCopyText(textToCopy, btnCopy);
-            }
-        }
-
-        // Méthode de secours pour la copie (compatible tout navigateur)
-        function fallbackCopyText(text, btn) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                handleCopySuccess(btn);
-            } catch (err) {
-                console.error('Erreur fallback copy', err);
-            }
-            document.body.removeChild(textArea);
-        }
-
-        function handleCopySuccess(btn) {
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            btn.style.color = "#10B981";
-            setTimeout(() => {
-                btn.innerHTML = originalContent;
-                btn.style.color = "white";
-            }, 2000);
-        }
-    </script>
+async function generateReport() {
+    const btn = document.getElementById("btn-gen");
+    const loader = document.getElementById("report-loader");
+    const body = document.getElementById("report-body");
+    btn.disabled = true;
+    btn.textContent = "...";
+    loader.style.display = "block";
+    body.style.display = "none";
+    try {
+        const r = await fetch("/generate-report");
+        const d = await r.json();
+        body.innerHTML = d.report.replace(/\n/g, "<br>");
+        body.style.display = "block";
+        btn.textContent = "Actualiser";
+    } catch(e) {
+        body.innerHTML = "Erreur. Réessayez.";
+        body.style.display = "block";
+        btn.textContent = "Réessayer";
+    } finally {
+        loader.style.display = "none";
+        btn.disabled = false;
+    }
+}
+</script>
 </body>
 </html>

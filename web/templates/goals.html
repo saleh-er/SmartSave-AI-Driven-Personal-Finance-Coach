@@ -1,207 +1,323 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSave - Goals</title>
+    <title>SmartSave — Objectifs</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080E1A;color:#F1F5F9;font-family:Inter,-apple-system,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;padding-bottom:90px}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#080E1A;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:100}
+.app-header h1{font-size:1.1rem;font-weight:800}
+.back-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);color:#F1F5F9;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.9rem}
+.goals-list{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.goal-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:18px;position:relative;overflow:hidden}
+.goal-accent{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:20px 0 0 20px}
+.goal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-left:12px}
+.goal-icon{font-size:1.6rem;margin-bottom:4px}
+.goal-name{font-size:1rem;font-weight:800;margin-bottom:2px}
+.goal-target{font-size:0.72rem;color:#64748b}
+.goal-pct{font-size:1.4rem;font-weight:900}
+.goal-progress-wrap{padding-left:12px;margin-bottom:12px}
+.goal-bar-bg{height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.goal-bar-fill{height:100%;border-radius:4px;transition:width 0.8s ease}
+.goal-amounts{display:flex;justify-content:space-between;font-size:0.75rem}
+.goal-saved{font-weight:700}
+.goal-left{color:#64748b}
+.goal-prediction{padding-left:12px;margin-bottom:14px}
+.prediction-box{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.15);border-radius:12px;padding:10px 12px;font-size:0.78rem;color:#94a3b8;display:flex;align-items:center;gap:8px}
+.prediction-box i{color:#F59E0B;flex-shrink:0}
+.goal-actions{display:flex;gap:8px;padding-left:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)}
+.deposit-input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#F1F5F9;padding:9px 12px;font-size:0.85rem;outline:none}
+.deposit-input:focus{border-color:#6366F1}
+.btn-deposit{padding:9px 16px;border-radius:10px;border:none;color:white;font-weight:700;font-size:0.82rem;cursor:pointer;transition:opacity 0.2s;white-space:nowrap}
+.btn-deposit:hover{opacity:0.85}
+.btn-delete{width:34px;height:34px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:#EF4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.82rem;flex-shrink:0}
+.empty-state{text-align:center;padding:50px 30px;color:#64748b}
+.empty-state i{font-size:2.5rem;margin-bottom:16px;display:block;opacity:0.3}
+.empty-state h3{font-size:0.95rem;font-weight:700;margin-bottom:6px;color:#94a3b8}
+.empty-state p{font-size:0.8rem;line-height:1.5}
+.add-btn-wrap{padding:0 20px 16px}
+.btn-add{width:100%;padding:14px;border-radius:16px;border:1.5px dashed rgba(99,102,241,0.3);background:rgba(99,102,241,0.05);color:#6366F1;font-weight:700;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.btn-add:hover{background:rgba(99,102,241,0.1);border-color:#6366F1}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(8,14,26,0.97);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.07);display:flex;padding:8px 16px 20px;z-index:200}
+.nav-link{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#64748b;padding:8px 4px;border-radius:12px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.nav-link i{font-size:1.1rem}.nav-link.active{color:#6366F1}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:430px;max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:1.05rem;font-weight:800;margin-bottom:18px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-label{font-size:0.72rem;color:#64748b;font-weight:600}
+.form-input,.form-select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#F1F5F9;padding:12px 14px;font-size:0.88rem;outline:none;width:100%;transition:border-color 0.2s}
+.form-input:focus,.form-select:focus{border-color:#6366F1}
+.type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.type-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:all 0.2s;font-size:0.6rem;color:#64748b;font-weight:600}
+.type-btn .icon{font-size:1.3rem}
+.type-btn.selected{background:rgba(99,102,241,0.12);border-color:#6366F1;color:#6366F1}
+.ai-plan-box{background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:14px;margin-bottom:14px;font-size:0.8rem;line-height:1.6;color:#94a3b8;display:none}
+.btn-ai{width:100%;padding:11px;border-radius:12px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#10B981;font-weight:700;font-size:0.82rem;cursor:pointer;margin-bottom:10px;transition:all 0.2s}
+.btn-ai:hover{background:rgba(16,185,129,0.15)}
+.btn-full{width:100%;padding:14px;border-radius:14px;font-size:0.92rem;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,#6366F1,#10B981);color:white;margin-top:4px}
+#notif-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-left:3px solid #10B981;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:0.85rem}
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <header class="brand-header">
-            <h1>Your Goals</h1>
-            <p>Save money for what matters</p>
-        </header>
+<div id="notif-container"></div>
 
-        <main class="goals-container" style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 150px;">
-            
+<!-- MODAL NOUVEL OBJECTIF -->
+<div class="modal-overlay" id="goalModal">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Nouvel objectif 🎯</div>
+
+        <div class="form-group">
+            <label class="form-label">Type de projet</label>
+            <div class="type-grid">
+                <div class="type-btn selected" onclick="selectType(this,'Voiture')" data-type="Voiture"><span class="icon">🚗</span>Voiture</div>
+                <div class="type-btn" onclick="selectType(this,'Maison')" data-type="Maison"><span class="icon">🏠</span>Maison</div>
+                <div class="type-btn" onclick="selectType(this,'Voyage')" data-type="Voyage"><span class="icon">✈️</span>Voyage</div>
+                <div class="type-btn" onclick="selectType(this,'Études')" data-type="Études"><span class="icon">📚</span>Études</div>
+                <div class="type-btn" onclick="selectType(this,'Urgence')" data-type="Urgence"><span class="icon">🛡️</span>Urgence</div>
+                <div class="type-btn" onclick="selectType(this,'Mariage')" data-type="Mariage"><span class="icon">💍</span>Mariage</div>
+                <div class="type-btn" onclick="selectType(this,'Retraite')" data-type="Retraite"><span class="icon">🌴</span>Retraite</div>
+                <div class="type-btn" onclick="selectType(this,'Autre')" data-type="Autre"><span class="icon">⭐</span>Autre</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Nom du projet</label>
+            <input type="text" id="goal-name" class="form-input" placeholder="Ex: Toyota Yaris 2025">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Montant cible (€)</label>
+            <input type="number" id="goal-target" class="form-input" placeholder="Ex: 15000" min="1">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Couleur</label>
+            <input type="color" id="goal-color" value="#6366F1" style="width:100%;height:44px;border:1px solid rgba(255,255,255,0.08);border-radius:12px;background:rgba(255,255,255,0.05);cursor:pointer;padding:4px;">
+        </div>
+
+        <button class="btn-ai" onclick="getAIPlan()">
+            <i class="fas fa-wand-magic-sparkles"></i> Générer un plan d'épargne IA
+        </button>
+
+        <div class="ai-plan-box" id="ai-plan-box">
+            <i class="fas fa-robot" style="color:#10B981;margin-right:6px;"></i>
+            <span id="ai-plan-text"></span>
+        </div>
+
+        <button class="btn-full" onclick="saveGoal()">
+            <i class="fas fa-plus"></i> Créer l'objectif
+        </button>
+    </div>
+</div>
+
+<div class="app">
+    <header class="app-header">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h1>Mes Objectifs</h1>
+        <div style="width:36px"></div>
+    </header>
+
+    <div class="goals-list">
+        {% if goals %}
             {% for goal in goals %}
-            <div class="glass-card goal-card" style="position: relative; overflow: hidden;">
-                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: {{ goal.color }};"></div>
-                
-                <div style="padding-left: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                        <div>
-                            <h3 style="margin: 0; font-size: 1.2rem;">{{ goal.name }}</h3>
-                            <span style="font-size: 0.8rem; color: var(--text-secondary);">Target: €{{ goal.target }}</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
-                            <i class="fas fa-trash" onclick="deleteGoal('{{ goal.id }}', '{{ goal.name }}')" 
-                               style="color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; transition: 0.3s;"
-                               onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'"></i>
-                            
-                            {% set percent = (goal.current / goal.target * 100)|int if goal.target > 0 else 0 %}
-                            <span style="font-size: 1.3rem; font-weight: 800; color: {{ goal.color }};">{{ percent }}%</span>
-                        </div>
-                    </div>
+            {% set percent = [(goal.current / goal.target * 100), 100]|min|int if goal.target > 0 else 0 %}
+            {% set icon = "🚗" if "voiture" in goal.name|lower else
+                          "🏠" if "maison" in goal.name|lower else
+                          "✈️" if "voyage" in goal.name|lower else
+                          "📚" if "etude" in goal.name|lower or "étude" in goal.name|lower else
+                          "🛡️" if "urgence" in goal.name|lower else
+                          "💍" if "mariage" in goal.name|lower else
+                          "🌴" if "retraite" in goal.name|lower else "🎯" %}
+            <div class="goal-card">
+                <div class="goal-accent" style="background:{{ goal.color }}"></div>
 
-                    <div class="progress-track" style="background: rgba(255,255,255,0.1); height: 12px; border-radius: 6px; margin-bottom: 10px;">
-                        <div class="progress-fill" style="width: {{ percent }}%; height: 100%; background: {{ goal.color }}; border-radius: 6px; box-shadow: 0 0 15px {{ goal.color }}66;"></div>
+                <div class="goal-header">
+                    <div>
+                        <div class="goal-icon">{{ icon }}</div>
+                        <div class="goal-name">{{ goal.name }}</div>
+                        <div class="goal-target">Objectif : {{ goal.target }}€</div>
                     </div>
-
-                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 15px;">
-                        <span style="font-weight: 600;">€{{ goal.current }} saved</span>
-                        <span style="color: var(--text-secondary);">€{{ (goal.target - goal.current)|round(2) }} left</span>
-                    </div>
-
-                    <div class="ai-prediction-box" id="prediction-{{ goal.id }}" 
-                         style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 15px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.1);">
-                        <i class="fas fa-magic" style="color: #fbbf24;"></i> 
-                        <span id="text-{{ goal.id }}" style="color: #e2e8f0;">Analyzing your savings pace... ⏳</span>
-                    </div>
-
-                    <div style="display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
-                        <input type="number" id="save-amount-{{ goal.id }}" placeholder="€" 
-                               style="width: 80px; padding: 8px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
-                        <button onclick="depositMoney({{ goal.id }}, '{{ goal.color }}')" 
-                                style="flex: 1; padding: 8px; border-radius: 8px; border: none; background: {{ goal.color }}; color: white; font-weight: 600; cursor: pointer; transition: 0.2s;"
-                                onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                            Add Savings
+                    <div style="text-align:right;">
+                        <div class="goal-pct" style="color:{{ goal.color }}">{{ percent }}%</div>
+                        <button class="btn-delete" onclick="deleteGoal({{ goal.id }}, '{{ goal.name }}')">
+                            <i class="fas fa-trash-can"></i>
                         </button>
                     </div>
                 </div>
+
+                <div class="goal-progress-wrap">
+                    <div class="goal-bar-bg">
+                        <div class="goal-bar-fill" style="width:{{ percent }}%;background:{{ goal.color }};"></div>
+                    </div>
+                    <div class="goal-amounts">
+                        <span class="goal-saved" style="color:{{ goal.color }}">{{ goal.current }}€ épargnés</span>
+                        <span class="goal-left">{{ (goal.target - goal.current)|round(2) }}€ restants</span>
+                    </div>
+                </div>
+
+                <div class="goal-prediction">
+                    <div class="prediction-box">
+                        <i class="fas fa-clock"></i>
+                        <span id="pred-{{ goal.id }}">Calcul en cours...</span>
+                    </div>
+                </div>
+
+                <div class="goal-actions">
+                    <input type="number" id="dep-{{ goal.id }}" class="deposit-input" placeholder="Montant €" min="0.01" step="0.01">
+                    <button class="btn-deposit" style="background:{{ goal.color }}" onclick="deposit({{ goal.id }}, '{{ goal.color }}')">
+                        <i class="fas fa-plus"></i> Ajouter
+                    </button>
+                    <button class="btn-delete" onclick="deleteGoal({{ goal.id }}, '{{ goal.name }}')">
+                        <i class="fas fa-trash-can"></i>
+                    </button>
+                </div>
             </div>
             {% endfor %}
-
-            <div id="goal-form" class="glass-card" style="display: none; border: 1px solid var(--accent-teal);">
-                <h3 style="margin-bottom: 15px; font-size: 1.1rem;">New Saving Goal</h3>
-                <input type="text" id="goal-name" placeholder="What are you saving for?" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
-                <input type="number" id="goal-target" placeholder="Target Amount (€)" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none;">
-                
-                <div id="ai-plan-result" style="display:none; margin: 15px 0; padding: 12px; background: rgba(99, 102, 241, 0.15); border-radius: 12px; font-size: 0.85rem; border: 1px dashed var(--accent-teal); color: white;">
-                    <i class="fas fa-robot" style="color: var(--accent-teal);"></i> <span id="plan-text">Calculating...</span>
-                </div>
-
-                <button onclick="getAIPlan()" class="action-btn secondary" style="width: 100%; margin-bottom: 15px; background: rgba(16, 185, 129, 0.1); color: var(--accent-teal); border: 1px solid var(--accent-teal);">
-                    <i class="fas fa-magic"></i> Suggest Savings Plan
-                </button>
-
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary);">Color:</label>
-                    <input type="color" id="goal-color" value="#10B981" style="border: none; background: none; width: 40px; height: 40px; cursor: pointer;">
-                </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="saveGoal()" class="action-btn primary" style="flex: 2;">Create Goal</button>
-                    <button onclick="hideForm()" class="action-btn secondary" style="flex: 1;">Cancel</button>
-                </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-bullseye"></i>
+                <h3>Aucun objectif</h3>
+                <p>Créez votre premier objectif d'épargne et l'IA vous proposera un plan personnalisé</p>
             </div>
-
-            <button id="add-btn" onclick="showForm()" class="glass-card" style="border: 2px dashed var(--glass-border); background: transparent; color: var(--text-secondary); padding: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
-                <i class="fas fa-plus"></i> Add New Goal
-            </button>
-        </main>
-
-        <nav class="bottom-nav">
-            <a href="/" class="nav-link"><i class="fas fa-home"></i> <span>Home</span></a>
-            <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i> <span>Stats</span></a>
-            <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span></a>
-            <a href="/goals" class="nav-link active"><i class="fas fa-bullseye"></i> <span>Goals</span></a>
-        </nav>
+        {% endif %}
     </div>
 
-    <script>
-        function showForm() {
-            document.getElementById('goal-form').style.display = 'block';
-            document.getElementById('add-btn').style.display = 'none';
-        }
+    <div class="add-btn-wrap">
+        <button class="btn-add" onclick="openModal()">
+            <i class="fas fa-plus"></i> Nouvel objectif
+        </button>
+    </div>
+</div>
 
-        function hideForm() {
-            document.getElementById('goal-form').style.display = 'none';
-            document.getElementById('add-btn').style.display = 'flex';
-        }
+<nav class="bottom-nav">
+    <a href="/" class="nav-link"><i class="fas fa-home"></i>Home</a>
+    <a href="/transactions" class="nav-link"><i class="fas fa-receipt"></i>Dépenses</a>
+    <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i>Stats</a>
+    <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i>Coach</a>
+    <a href="/goals" class="nav-link active"><i class="fas fa-bullseye"></i>Objectifs</a>
+</nav>
 
-        async function loadPrediction(goalId) {
-            try {
-                const response = await fetch(`/goal-prediction/${goalId}`);
-                const data = await response.json();
-                const element = document.getElementById('text-' + goalId);
-                if (element) element.innerText = data.prediction;
-            } catch (e) {
-                console.error("Error loading prediction", e);
-            }
-        }
+<script>
+let selectedType = "Voiture";
 
-        window.onload = () => {
-            {% for goal in goals %}
-                loadPrediction({{ goal.id }});
-            {% endfor %}
-        };
+function showNotif(msg, type="success") {
+    const c = document.getElementById("notif-container");
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.style.borderLeftColor = type === "error" ? "#EF4444" : "#10B981";
+    t.innerHTML = `<i class="fas fa-${type==="error"?"xmark":"check"}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
 
-        async function depositMoney(goalId, color) {
-            const input = document.getElementById(`save-amount-${goalId}`);
-            const amount = input.value;
-            if (!amount || amount <= 0) return alert("Enter a valid amount!");
+function openModal() { document.getElementById("goalModal").classList.add("open"); }
 
-            try {
-                const response = await fetch(`/add-savings/${goalId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: parseFloat(amount) })
-                });
+document.getElementById("goalModal").addEventListener("click", e => {
+    if (e.target === document.getElementById("goalModal"))
+        document.getElementById("goalModal").classList.remove("open");
+});
 
-                if (response.ok) {
-                    confetti({
-                        particleCount: 100,
-                        spread: 60,
-                        origin: { y: 0.7 },
-                        colors: [color, '#ffffff']
-                    });
-                    setTimeout(() => location.reload(), 800);
-                }
-            } catch (error) {
-                alert("Error updating savings.");
-            }
-        }
+function selectType(el, type) {
+    selectedType = type;
+    document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("selected"));
+    el.classList.add("selected");
+    if (!document.getElementById("goal-name").value) {
+        document.getElementById("goal-name").placeholder = `Ex: ${type === "Voiture" ? "Toyota Yaris 2025" : 
+            type === "Maison" ? "Appartement Paris" : 
+            type === "Voyage" ? "Vacances Maldives" : 
+            type === "Études" ? "Master Data Science" : type}`;
+    }
+}
 
-        async function saveGoal() {
-            const name = document.getElementById('goal-name').value;
-            const target = document.getElementById('goal-target').value;
-            const color = document.getElementById('goal-color').value;
-            if (!name || !target) return alert("Please fill all fields!");
+async function getAIPlan() {
+    const name = document.getElementById("goal-name").value || selectedType;
+    const target = document.getElementById("goal-target").value;
+    if (!target) { showNotif("Entrez un montant cible", "error"); return; }
+    const box = document.getElementById("ai-plan-box");
+    const text = document.getElementById("ai-plan-text");
+    box.style.display = "block";
+    text.textContent = "L'IA calcule votre plan...";
+    try {
+        const r = await fetch("/calculate-plan", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({name: name || selectedType, target: parseFloat(target)})
+        });
+        const d = await r.json();
+        text.textContent = d.plan;
+    } catch(e) {
+        text.textContent = "Erreur. Réessayez.";
+    }
+}
 
-            const response = await fetch('/add-goal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, target, color })
-            });
+async function saveGoal() {
+    const name = document.getElementById("goal-name").value.trim();
+    const target = document.getElementById("goal-target").value;
+    const color = document.getElementById("goal-color").value;
+    if (!name || !target) { showNotif("Remplissez tous les champs", "error"); return; }
+    const r = await fetch("/add-goal", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name, target: parseFloat(target), color})
+    });
+    const d = await r.json();
+    if (d.status === "success") {
+        confetti({particleCount: 150, spread: 70, origin: {y: 0.6}});
+        showNotif("Objectif créé !");
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        showNotif(d.detail || "Erreur", "error");
+    }
+}
 
-            if (response.ok) {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                setTimeout(() => window.location.reload(), 1000);
-            }
-        }
+async function deposit(id, color) {
+    const amount = document.getElementById(`dep-${id}`).value;
+    if (!amount || amount <= 0) { showNotif("Entrez un montant valide", "error"); return; }
+    const r = await fetch(`/add-savings/${id}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({amount: parseFloat(amount)})
+    });
+    const d = await r.json();
+    if (d.status === "success") {
+        confetti({particleCount: 100, spread: 60, origin: {y: 0.7}, colors: [color, "#ffffff"]});
+        showNotif("Épargne ajoutée !");
+        setTimeout(() => location.reload(), 1000);
+    }
+}
 
-        async function deleteGoal(id, name) {
-            if (!confirm(`Delete "${name}"?`)) return;
-            const response = await fetch(`/delete-goal/${id}`, { method: 'DELETE' });
-            if (response.ok) window.location.reload();
-        }
+async function deleteGoal(id, name) {
+    if (!confirm(`Supprimer "${name}" ?`)) return;
+    const r = await fetch(`/delete-goal/${id}`, {method: "DELETE"});
+    const d = await r.json();
+    if (d.status === "success") { showNotif("Objectif supprimé"); setTimeout(() => location.reload(), 800); }
+}
 
-        async function getAIPlan() {
-            const name = document.getElementById('goal-name').value;
-            const target = document.getElementById('goal-target').value;
-            const planText = document.getElementById('plan-text');
-            if (!name || !target) return alert("Enter name and target!");
-            
-            document.getElementById('ai-plan-result').style.display = 'block';
-            planText.innerText = "Calculating plan... ⏳";
+async function loadPrediction(id) {
+    try {
+        const r = await fetch(`/goal-prediction/${id}`);
+        const d = await r.json();
+        const el = document.getElementById(`pred-${id}`);
+        if (el) el.textContent = d.prediction;
+    } catch(e) {}
+}
 
-            try {
-                const response = await fetch('/calculate-plan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, target })
-                });
-                const data = await response.json();
-                planText.innerText = data.plan;
-            } catch (e) {
-                planText.innerText = "Error contacting coach.";
-            }
-        }
-    </script>
+window.addEventListener("load", () => {
+    {% for goal in goals %}
+    loadPrediction({{ goal.id }});
+    {% endfor %}
+});
+</script>
 </body>
 </html>

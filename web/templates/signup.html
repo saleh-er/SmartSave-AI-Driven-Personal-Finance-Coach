@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSave — Créer un compte</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+
+<div class="w-full max-w-md">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4">
+            <i class="fa-solid fa-piggy-bank text-white text-2xl"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-white">SmartSave</h1>
+        <p class="text-gray-400 mt-1">Créez votre compte gratuitement</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-gray-900 rounded-2xl p-8 border border-gray-800">
+        <h2 class="text-xl font-semibold text-white mb-6">Nouveau compte</h2>
+
+        <!-- Error message -->
+        <div id="error-msg" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-4 text-sm"></div>
+        <!-- Success message -->
+        <div id="success-msg" class="hidden bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl p-3 mb-4 text-sm"></div>
+
+        <div class="space-y-4">
+            <!-- Nom complet -->
+            <div>
+                <label class="block text-gray-400 text-sm mb-2">Nom complet</label>
+                <div class="relative">
+                    <i class="fa-solid fa-user absolute left-3 top-3.5 text-gray-500"></i>
+                    <input id="full_name" type="text" placeholder="John Doe"
+                        class="w-full bg-gray-800 text-white rounded-xl pl-10 pr-4 py-3 border border-gray-700 focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div>
+                <label class="block text-gray-400 text-sm mb-2">Email</label>
+                <div class="relative">
+                    <i class="fa-solid fa-envelope absolute left-3 top-3.5 text-gray-500"></i>
+                    <input id="email" type="email" placeholder="votre@email.com"
+                        class="w-full bg-gray-800 text-white rounded-xl pl-10 pr-4 py-3 border border-gray-700 focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Mot de passe -->
+            <div>
+                <label class="block text-gray-400 text-sm mb-2">Mot de passe</label>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-3 top-3.5 text-gray-500"></i>
+                    <input id="password" type="password" placeholder="••••••••"
+                        class="w-full bg-gray-800 text-white rounded-xl pl-10 pr-4 py-3 border border-gray-700 focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Revenu mensuel -->
+            <div>
+                <label class="block text-gray-400 text-sm mb-2">Revenu mensuel (€)</label>
+                <div class="relative">
+                    <i class="fa-solid fa-euro-sign absolute left-3 top-3.5 text-gray-500"></i>
+                    <input id="monthly_income" type="number" placeholder="2000"
+                        class="w-full bg-gray-800 text-white rounded-xl pl-10 pr-4 py-3 border border-gray-700 focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Situation -->
+            <div>
+                <label class="block text-gray-400 text-sm mb-2">Situation</label>
+                <div class="relative">
+                    <i class="fa-solid fa-briefcase absolute left-3 top-3.5 text-gray-500"></i>
+                    <select id="situation"
+                        class="w-full bg-gray-800 text-white rounded-xl pl-10 pr-4 py-3 border border-gray-700 focus:border-indigo-500 focus:outline-none appearance-none">
+                        <option value="employee">Salarié</option>
+                        <option value="student">Étudiant</option>
+                        <option value="freelance">Indépendant / Freelance</option>
+                        <option value="retired">Retraité</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="handleSignup()"
+                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-user-plus"></i>
+                Créer mon compte
+            </button>
+        </div>
+
+        <p class="text-center text-gray-500 text-sm mt-6">
+            Déjà un compte ?
+            <a href="/login" class="text-indigo-400 hover:text-indigo-300 font-medium">Se connecter</a>
+        </p>
+    </div>
+</div>
+
+<script>
+async function handleSignup() {
+    const full_name = document.getElementById('full_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const monthly_income = parseFloat(document.getElementById('monthly_income').value) || 0;
+    const situation = document.getElementById('situation').value;
+    const errorDiv = document.getElementById('error-msg');
+    const successDiv = document.getElementById('success-msg');
+
+    errorDiv.classList.add('hidden');
+    successDiv.classList.add('hidden');
+
+    if (!full_name || !email || !password) {
+        errorDiv.textContent = "Veuillez remplir tous les champs obligatoires.";
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+
+    if (password.length < 6) {
+        errorDiv.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/signup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({full_name, email, password, monthly_income, situation})
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            document.cookie = `access_token=${data.token}; path=/; max-age=86400`;
+            successDiv.textContent = `Bienvenue ${data.name} ! Redirection...`;
+            successDiv.classList.remove('hidden');
+            setTimeout(() => window.location.href = '/', 1500);
+        } else {
+            errorDiv.textContent = data.detail || "Erreur lors de la création du compte.";
+            errorDiv.classList.remove('hidden');
+        }
+    } catch (e) {
+        errorDiv.textContent = "Erreur serveur. Réessayez.";
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleSignup();
+});
+</script>
+</body>
+</html>

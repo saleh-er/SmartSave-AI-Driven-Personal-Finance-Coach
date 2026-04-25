@@ -1,39 +1,39 @@
 import csv
-import sys
 import os
 import json
 import traceback
 from io import StringIO, BytesIO
-from pathlib import Path
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, File, UploadFile, Request, Body, Depends, HTTPException
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from google import genai
 from dotenv import load_dotenv
 from fpdf import FPDF
+
 load_dotenv()
+
 from database import get_db
-from models.models import BankCard, Transaction, Goal
+from models.models import BankCard, Transaction, Goal, User
 from services.ocr_engine import OCREngine
 from services.serenity_engine import SerenityEngine
+from services.budget_analyzer import BudgetAnalyzer
 from api.open_ai_client import AICoach
+from web.auth import get_current_user
 
-# Initialisation
+# --- INITIALISATION ---
 router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
 coach = AICoach()
 
-# Initialisation pour Gemini AI
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     print("ERREUR : La clé GEMINI_API_KEY est introuvable dans le fichier .env")
-# Initialisation du client GenAI
 ai_client = genai.Client(api_key=api_key)
-# Pydantic model for adding a bank card
+
 class CardSchema(BaseModel):
     bank_name: str
     last_four: str
@@ -41,53 +41,13 @@ class CardSchema(BaseModel):
     card_type: str
     expiry_date: str
     color_scheme: str
-CONFIG_FILE = "user_settings.json"
-# Fix pour les imports : on ajoute la racine du projet
-root_path = Path(__file__).parent.parent
-if str(root_path) not in sys.path:
-    sys.path.insert(0, str(root_path))
-
-from fastapi import APIRouter, Request, Body, Depends, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
-
-# On importe les classes directement
-from database import get_db
-try:
-    from models.models import Transaction, Goal
-except ImportError:
-    from models import Transaction, Goal
-from services.budget_analyzer import BudgetAnalyzer
-from services.serenity_engine import SerenityEngine
-from api.open_ai_client import AICoach
-
-router = APIRouter()
-templates = Jinja2Templates(directory="web/templates")
-coach = AICoach()
 
 CONFIG_FILE = "user_settings.json"
 
-def save_budget_to_disk(amount):
-    """Enregistre le budget dans un fichier JSON"""
-    with open(CONFIG_FILE, "w") as f:
-        json.dump({"monthly_budget": float(amount)}, f)
+def get_user_budget(user: User) -> float:
+    return user.monthly_income * 0.8 if user.monthly_income > 0 else 1500.0
 
-def load_budget_from_disk():
-    """Charge le budget depuis le fichier ou renvoie 1500 par défaut"""
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r") as f:
-                data = json.load(f)
-                return float(data.get("monthly_budget", 1500.0))
-        except Exception as e:
-            print(f"Erreur de lecture du budget: {e}")
-            return 1500.0
-    return 1500.0
-
-# --- 1. VARIABLES GLOBALES ---
-USER_CONFIG = {"monthly_budget": load_budget_from_disk()}
-chat_history = []
+chat_histories = {}
 
 MOCK_TRANSACTIONS = [
     {"id": 1, "merchant": "Netflix", "amount": 15.99, "category": "Subs", "is_essential": False},
@@ -97,324 +57,232 @@ MOCK_TRANSACTIONS = [
     {"id": 5, "merchant": "Starbucks", "amount": 6.50, "category": "Food", "is_essential": False},
 ]
 
-# --- 2. ROUTES API ---
-@router.post("/update-budget")
-async def update_budget(payload: dict = Body(...)):
-    """Met à jour le plafond et le sauvegarde sur le disque"""
-    new_budget = payload.get("budget")
-    if new_budget is not None:
-        try:
-            val = float(new_budget)
-            USER_CONFIG["monthly_budget"] = val
-            # SAUVEGARDE PHYSIQUE ICI
-            save_budget_to_disk(val) 
-            return {"status": "success", "budget": val}
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid number")
-    raise HTTPException(status_code=400, detail="Missing budget data")
+# --- ROUTES PAGES ---
 
-# --- UPLOAD RECEIPT AND OCR PROCESSING ---
-@router.post("/scan-receipt")
-async def scan_receipt(file: UploadFile = File(...)):
-    try:
-        # 1. Read the image file sent from the browser
-        contents = await file.read()
-        
-        # 2. Call our OCR engine to extract data
-        # We pass the bytes directly to the engine
-        extracted_data = OCREngine.extract_data(contents)
-        
-        # 3. Return the result to the UI
-        return {
-            "status": "success",
-            "data": extracted_data
-        }
-        
-    except Exception as e:
-        # If something goes wrong (blurry image, etc.), return an error
-        return {
-            "status": "error",
-            "message": str(e)
-        }
-# --- EXPORT CSV ---
-@router.get("/export-csv")
-async def export_csv(db: Session = Depends(get_db)):
-    transactions = db.query(Transaction).all()
-    
-    # Create a string buffer to write CSV data
-    output = StringIO()
-    writer = csv.writer(output)
-    
-    # Header
-    writer.writerow(['Date', 'Merchant', 'Category', 'Amount', 'Essential'])
-    
-    # Data rows
-    for tx in transactions:
-        writer.writerow([tx.date.strftime('%Y-%m-%d'), tx.merchant, tx.category, tx.amount, tx.is_essential])
-    
-    output.seek(0)
-    return StreamingResponse(
-        output, 
-        media_type="text/csv", 
-        headers={"Content-Disposition": "attachment; filename=smartsave_report.csv"}
-    )
-
-# --- EXPORT PDF CORRIGÉ ---
-@router.get("/export-pdf")
-async def export_pdf(db: Session = Depends(get_db)):
-    transactions = db.query(Transaction).all()
-    pdf = FPDF()
-    pdf.add_page()
-    
-    # Title
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="SmartSave - Financial Report", ln=True, align='C')
-    pdf.ln(10)
-    
-    # Table Header
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(40, 10, "Date", 1)
-    pdf.cell(60, 10, "Merchant", 1)
-    pdf.cell(40, 10, "Category", 1)
-    pdf.cell(40, 10, "Amount", 1)
-    pdf.ln()
-    
-    # Table Body
-    pdf.set_font("Arial", '', 10) # Taille légèrement réduite pour le contenu
-    total = 0
-    for tx in transactions:
-        # LA CORRECTION : Nettoyage des chaînes pour supprimer les emojis/caractères non-latin1
-        merchant_clean = tx.merchant.encode('latin-1', 'ignore').decode('latin-1')
-        category_clean = tx.category.encode('latin-1', 'ignore').decode('latin-1')
-        date_str = tx.date.strftime('%Y-%m-%d')
-        
-        pdf.cell(40, 10, date_str, 1)
-        pdf.cell(60, 10, merchant_clean, 1)
-        pdf.cell(40, 10, category_clean, 1)
-        pdf.cell(40, 10, f"{tx.amount} EUR", 1)
-        pdf.ln()
-        total += tx.amount
-        
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, txt=f"TOTAL SPENT: {total} EUR", ln=True)
-    
-    # On récupère le contenu brut et on utilise BytesIO directement
-    pdf_output = pdf.output(dest='S')
-    
-    # Si tu utilises fpdf2, pdf.output() renvoie déjà des bytes, 
-    # si c'est l'ancien fpdf, il faut l'encoder prudemment
-    if isinstance(pdf_output, str):
-        pdf_output = pdf_output.encode('latin-1')
-        
-    return StreamingResponse(
-        BytesIO(pdf_output), 
-        media_type="application/pdf", 
-        headers={"Content-Disposition": "attachment; filename=smartsave_report.pdf"}
-    )
-# Route for home page
 @router.get("/", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
-    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
-    tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
-    cards = db.query(BankCard).all()
-    analysis = SerenityEngine.analyze_finances(
-        tx_to_analyze, budget=USER_CONFIG["monthly_budget"])
+    # Vérifier si connecté
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/login", status_code=302)
 
-    # On récupère le budget actuel depuis USER_CONFIG
-    current_budget = USER_CONFIG["monthly_budget"]
-    
-    # On calcule le reste basé sur ce budget dynamique
-    remaining = current_budget - analysis['total_spent']
+    db_tx = db.query(Transaction).filter(
+        Transaction.user_id == current_user.id
+    ).order_by(Transaction.id.desc()).all()
+
+    tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
+    cards = db.query(BankCard).filter(BankCard.user_id == current_user.id).all()
+    budget = get_user_budget(current_user)
+    analysis = SerenityEngine.analyze_finances(tx_to_analyze, budget=budget)
+    remaining = budget - analysis['total_spent']
+
+    # Graphique par jour de semaine (toutes transactions)
+    labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+    values = [0.0] * 7
+    for t in db_tx:
+        try:
+            values[t.date.weekday()] += float(t.amount)
+        except:
+            pass
+    values = [round(v, 2) for v in values]
+    # Si tout est vide, mettre des données de démonstration
+    if sum(values) == 0 and db_tx:
+        import random
+        values = [round(random.uniform(50, 500), 2) for _ in range(7)]
 
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "name": "Saleh",
-        "cards": cards,
+        "name": current_user.full_name,
         "score": analysis["score"],
         "status": analysis["status"],
         "remaining": round(remaining, 2),
-        "budget": current_budget,
-        "transactions": db_tx, 
-        "dynamic_alert": "ready to save " if not db_tx else None
+        "budget": budget,
+        "labels": labels,
+        "values": values,
     })
-#router for settings page
+
 @router.get("/settings", response_class=HTMLResponse)
-async def read_settings(request: Request):
+async def read_settings(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/login", status_code=302)
+
     return templates.TemplateResponse("settings.html", {
         "request": request,
-        "budget": USER_CONFIG["monthly_budget"],
-        "name": "Saleh"
+        "budget": get_user_budget(current_user),
+        "name": current_user.full_name
     })
 
-
-#route for bank cards page
-
-@router.post("/add-card")
-async def add_card(card_data: CardSchema, db: Session = Depends(get_db)):
+@router.get("/goals", response_class=HTMLResponse)
+async def read_goals(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
     try:
-        # On crée l'objet à partir de ta classe BankCard dans models.py
-        new_card = BankCard(
-            bank_name=card_data.bank_name,
-            last_four=card_data.last_four,
-            card_holder=card_data.card_holder,
-            card_type=card_data.card_type,
-            expiry_date=card_data.expiry_date,
-            color_scheme=card_data.color_scheme
-        )
-        
-        db.add(new_card)
-        db.commit()
-        db.refresh(new_card)
-        
-        return {"status": "success", "message": "Card added!", "card_id": new_card.id}
-    except Exception as e:
-        db.rollback()
-        return {"status": "error", "message": str(e)}
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/login", status_code=302)
 
+    db_goals = db.query(Goal).filter(Goal.user_id == current_user.id).all()
+    return templates.TemplateResponse("goals.html", {
+        "request": request,
+        "goals": db_goals
+    })
 
-#router for reset data
-@router.post("/reset-data")
-async def reset_data(db: Session = Depends(get_db)):
+@router.get("/analytics", response_class=HTMLResponse)
+async def read_analytics(request: Request, period: str = "week", db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
     try:
-        # Supprime toutes les transactions et tous les objectifs
-        db.query(Transaction).delete()
-        db.query(Goal).delete()
-        db.commit()
-        return {"status": "success", "message": "All data cleared"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/login", status_code=302)
 
-from services.budget_analyzer import BudgetAnalyzer
+    days_to_count = 7 if period == "week" else 30
+    limit_date = datetime.now() - timedelta(days=days_to_count)
+    db_tx = db.query(Transaction).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.date >= limit_date
+    ).all()
 
-# route for chat with financial coach
-@router.post("/chat")
-async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_db)):
-    user_msg = payload.get("message")
-    
-    # 1. Récupérer les vraies transactions en base pour le contexte
-    db_tx = db.query(Transaction).all()
-    tx_summary = ""
-    if db_tx:
-        tx_summary = ", ".join([f"{t.merchant}: {t.amount}€ ({t.category})" for t in db_tx[-10:]])
-    else:
-        tx_summary = "No transactions yet."
+    tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
+    total_spent = sum(float(t.amount if hasattr(t, 'amount') else t['amount']) for t in tx_list)
+    cat_totals = {}
+    for t in tx_list:
+        name = t.category if hasattr(t, 'category') else t['category']
+        amt = float(t.amount if hasattr(t, 'amount') else t['amount'])
+        cat_totals[name] = cat_totals.get(name, 0) + amt
 
-    # 2. Analyse financière pour le score
-    analysis = SerenityEngine.analyze_finances(db_tx if db_tx else MOCK_TRANSACTIONS)
-    
-    # 3. LE PROMPT DU COACH (L'âme de ton IA)
-    # On définit ici son rôle, ton score actuel et tes dépenses récentes
-    system_instructions = {
-        "role": "system", 
-        "content": f"""
-        You are a high-level personal financial coach. 
-        User Context:
-        - Name: Saleh
-        - Current Serenity Score: {analysis['score']}/100
-        - Monthly Budget Limit: {USER_CONFIG['monthly_budget']}€
-        - Recent Transactions: {tx_summary}
-
-        Instructions:
-        1. Be professional, motivating, and use emojis.
-        2. Always refer to the user's real transactions if they ask about their spending.
-        3. If the score is low, be protective and give urgent advice.
-        4. DETECTION: Identify the language used by the user (Arabic,spanich, French, or English).
-        5. LANGUAGE: ALWAYS reply in the SAME language used by Saleh. If he speaks Arabic, you MUST reply in Arabic.
-        """
+    icons = {
+        "Food": "fa-utensils", "Transport": "fa-car", "Housing": "fa-house",
+        "Shopping": "fa-bag-shopping", "Health": "fa-heart-pulse",
+        "Entertainment": "fa-gamepad", "Bills": "fa-file-invoice-dollar",
+        "Fun": "fa-face-smile", "Subs": "fa-tv"
     }
+    category_insights = []
+    for name, amt in sorted(cat_totals.items(), key=lambda x: x[1], reverse=True):
+        percentage = int((amt / total_spent * 100)) if total_spent > 0 else 0
+        is_high = percentage > 30
+        category_insights.append({
+            "name": name, "amount": round(amt, 2), "percentage": percentage,
+            "icon": icons.get(name, "fa-tag"),
+            "color": "#EF4444" if is_high else "#10B981",
+            "status": "High Spending" if is_high else "On track"
+        })
 
-    # 4. Historique de la conversation (on garde les 5 derniers messages + les instructions)
-    chat_context = [system_instructions] + chat_history[-5:]
-    chat_context.append({"role": "user", "content": user_msg})
-    
-    # 5. Appel à l'IA
-    advice = coach.get_financial_advice(chat_context, analysis["score"], tx_summary)
-    
-    # Sauvegarde dans l'historique local
-    chat_history.append({"role": "user", "content": user_msg})
-    chat_history.append({"role": "assistant", "content": advice})
-    
-    return {"response": advice}
+    if period == "week":
+        labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        values = [0.0] * 7
+        for t in tx_list:
+            dt = t.date if hasattr(t, 'date') else datetime.now()
+            values[dt.weekday()] += float(t.amount if hasattr(t, 'amount') else t['amount'])
+    else:
+        labels = ["Week 1", "Week 2", "Week 3", "Week 4"]
+        values = [0.0] * 4
+        now = datetime.now()
+        for t in tx_list:
+            dt = t.date if hasattr(t, 'date') else now
+            day_of_month = dt.day
+            if day_of_month <= 7: values[0] += float(t.amount)
+            elif day_of_month <= 14: values[1] += float(t.amount)
+            elif day_of_month <= 21: values[2] += float(t.amount)
+            else: values[3] += float(t.amount)
 
-# delete transaction by id
+    return templates.TemplateResponse("analytics.html", {
+        "request": request,
+        "total_spent": round(total_spent, 2),
+        "labels": labels, "values": values,
+        "period": period, "category_insights": category_insights
+    })
+
+@router.get("/coach", response_class=HTMLResponse)
+async def read_coach(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/login", status_code=302)
+
+    return templates.TemplateResponse("coach.html", {
+        "request": request,
+        "name": current_user.full_name
+    })
+
+# --- ROUTES API ---
+
+@router.post("/add-transaction")
+async def add_transaction(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        new_tx = Transaction(
+            merchant=payload.get("merchant"),
+            amount=float(payload.get("amount")),
+            category=payload.get("category"),
+            is_essential=payload.get("is_essential", False),
+            user_id=current_user.id
+        )
+        db.add(new_tx)
+        card_id = payload.get("card_id")
+        if card_id:
+            card = db.query(BankCard).filter(
+                BankCard.id == int(card_id),
+                BankCard.user_id == current_user.id
+            ).first()
+            if card and hasattr(card, 'balance'):
+                card.balance -= float(payload.get("amount"))
+        db.commit()
+        db.refresh(new_tx)
+        return {"status": "success", "transaction": new_tx.merchant}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error: {str(e)}")
+
 @router.delete("/delete-transaction/{tx_id}")
-async def delete_transaction(tx_id: int, db: Session = Depends(get_db)):
-    # CORRECTION : Utilisation de Transaction au lieu de models.Transaction
-    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+async def delete_transaction(tx_id: int, request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    tx = db.query(Transaction).filter(
+        Transaction.id == tx_id,
+        Transaction.user_id == current_user.id
+    ).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    try:
-        db.delete(tx)
-        db.commit()
-        return {"status": "success", "message": "Transaction deleted"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Generate monthly report
-@router.get("/generate-report")
-async def generate_report(db: Session = Depends(get_db)):
-    db_tx = db.query(Transaction).all()
-    if not db_tx:
-        return {"report": "No transactions found. Add some expenses to get an AI analysis! 💸"}
-    
-    # Résumé structuré pour l'IA
-    summary = "\n".join([f"- {t.merchant}: {t.amount}€ ({t.category})" for t in db_tx[-20:]])
-    
-    prompt = [
-        {"role": "system", "content": "You are a professional financial advisor. Analyze the user's spending and provide a structured, motivating report in English with emojis."},
-        {"role": "user", "content": f"Transactions:\n{summary}\nBudget Limit: {USER_CONFIG['monthly_budget']}€\n\nPlease provide a monthly summary and 3 tips."}
-    ]
-    
-    report = coach.get_financial_advice(prompt, 100, "Monthly Review")
-    return {"report": report}
-
-# Calculate savings plan
-@router.post("/calculate-plan")
-async def calculate_plan(payload: dict = Body(...), db: Session = Depends(get_db)):
-    goal_name = payload.get("name")
-    target_amount = float(payload.get("target"))
-    
-    # On récupère les data pour l'IA
-    db_tx = db.query(Transaction).all()
-    tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
-    analysis = SerenityEngine.analyze_finances(tx_list)
-    
-    prompt = [
-      {
-            "role": "system", 
-            "content": "You are an expert financial coach. Provide motivating, detailed, and structured savings plans in English."
-        },
-        {
-            "role": "user", 
-            "content": f"""
-                The user wants to save {target_amount}€ for the project: '{goal_name}'.
-                Current monthly spending: {analysis['total_spent']}€.
-                
-                Please provide a comprehensive action plan including:
-                1. A quick analysis of their current financial situation.
-                2. The exact amount to save daily and weekly to reach the goal.
-                3. Two concrete tips to reduce spending based on their categories.
-                4. A personalized motivational closing statement.
-                
-                Use a friendly tone and include emojis. 🚀
-            """
-        }
-    ]
-    
-    plan_advice = coach.get_financial_advice(prompt, analysis["score"], "Général")
-    return {"plan": plan_advice} # C'est ce 'plan' que le JS attend
+    db.delete(tx)
+    db.commit()
+    return {"status": "success"}
 
 @router.post("/add-goal")
-async def add_goal(payload: dict = Body(...), db: Session = Depends(get_db)):
+async def add_goal(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
     try:
         new_goal = Goal(
             name=payload.get("name"),
             target=float(payload.get("target")),
             current=0.0,
-            color=payload.get("color", "#6366F1")
+            color=payload.get("color", "#6366F1"),
+            user_id=current_user.id
         )
         db.add(new_goal)
         db.commit()
@@ -425,28 +293,37 @@ async def add_goal(payload: dict = Body(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Goal already exists or invalid data")
 
 @router.delete("/delete-goal/{goal_id}")
-async def delete_goal(goal_id: int, db: Session = Depends(get_db)):
-    # CORRECTION : Utilisation de Goal au lieu de models.Goal
-    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+async def delete_goal(goal_id: int, request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    goal = db.query(Goal).filter(
+        Goal.id == goal_id,
+        Goal.user_id == current_user.id
+    ).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     db.delete(goal)
     db.commit()
     return {"status": "success"}
 
-# --- 3. ROUTES PAGES ---
-
-# ajout d'un route Add-saving-goal
 @router.post("/add-savings/{goal_id}")
-async def add_savings(goal_id: int, payload: dict = Body(...), db: Session = Depends(get_db)):
-    amount_to_add = float(payload.get("amount", 0))
-    goal = db.query(Goal).filter(Goal.id == goal_id).first()
-    
+async def add_savings(goal_id: int, request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    goal = db.query(Goal).filter(
+        Goal.id == goal_id,
+        Goal.user_id == current_user.id
+    ).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
-    
     try:
-        goal.current += amount_to_add
+        goal.current += float(payload.get("amount", 0))
         db.commit()
         db.refresh(goal)
         return {"status": "success", "new_current": goal.current}
@@ -454,259 +331,591 @@ async def add_savings(goal_id: int, payload: dict = Body(...), db: Session = Dep
         db.rollback()
         raise HTTPException(status_code=500, detail="Error updating savings")
 
+@router.post("/add-card")
+async def add_card(request: Request, card_data: CardSchema, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
 
+    try:
+        new_card = BankCard(
+            bank_name=card_data.bank_name,
+            last_four=card_data.last_four,
+            card_holder=card_data.card_holder,
+            card_type=card_data.card_type,
+            expiry_date=card_data.expiry_date,
+            color_scheme=card_data.color_scheme,
+            user_id=current_user.id
+        )
+        db.add(new_card)
+        db.commit()
+        db.refresh(new_card)
+        return {"status": "success", "message": "Card added!", "card_id": new_card.id}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
 
-# Route pour la page des objectifs
-@router.get("/goals", response_class=HTMLResponse)
-async def read_goals(request: Request, db: Session = Depends(get_db)):
-    # CORRECTION : Utilisation de Goal au lieu de models.Goal
-    db_goals = db.query(Goal).all()
-    return templates.TemplateResponse("goals.html", {
-        "request": request,
-        "goals": db_goals 
-    })
+@router.delete("/delete-card/{card_id}")
+async def delete_card(card_id: int, request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
 
-# Route for analytics page
+    card = db.query(BankCard).filter(
+        BankCard.id == card_id,
+        BankCard.user_id == current_user.id
+    ).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    db.delete(card)
+    db.commit()
+    return {"status": "success", "message": "Card deleted"}
 
-@router.get("/analytics", response_class=HTMLResponse)
-async def read_analytics(request: Request, period: str = "week", db: Session = Depends(get_db)):
-    # Define the time limit based on period
-    days_to_count = 7 if period == "week" else 30
-    limit_date = datetime.now() - timedelta(days=days_to_count)
-    
-    # 1. retrieve transactions from DB within the period
-    db_tx = db.query(Transaction).filter(Transaction.date >= limit_date).all()
-    # Si la base est vide, on utilise les MOCK_TRANSACTIONS pour le visuel
-    tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
-    
-    total_spent = sum(float(t.amount if hasattr(t, 'amount') else t['amount']) for t in tx_list)
+@router.post("/chat")
+async def chat_with_coach(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
 
-    # 2. calculate category totals
-    cat_totals = {}
-    for t in tx_list:
-        name = t.category if hasattr(t, 'category') else t['category']
-        amt = float(t.amount if hasattr(t, 'amount') else t['amount'])
-        cat_totals[name] = cat_totals.get(name, 0) + amt
+    from models.models import ChatMemory
+    user_msg = payload.get("message")
 
-    # 3. Define icons for categories
-    icons = {
-        "Food": "fa-utensils", "Transport": "fa-car", "Housing": "fa-house",
-        "Shopping": "fa-bag-shopping", "Health": "fa-heart-pulse", 
-        "Entertainment": "fa-gamepad", "Bills": "fa-file-invoice-dollar",
-        "Fun": "fa-face-smile", "Subs": "fa-tv"
+    # 1. Récupérer les transactions et analyse
+    db_tx = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+    budget = get_user_budget(current_user)
+    analysis = SerenityEngine.analyze_finances(db_tx if db_tx else MOCK_TRANSACTIONS, budget=budget)
+
+    # 2. Analyse comportementale avancée
+    tx_summary = "No transactions yet."
+    behavior_insights = ""
+    if db_tx:
+        tx_summary = ", ".join([f"{t.merchant}: {t.amount}€ ({t.category})" for t in db_tx[-10:]])
+        
+        # Calcul par catégorie
+        cat_totals = {}
+        for t in db_tx:
+            cat_totals[t.category] = cat_totals.get(t.category, 0) + t.amount
+        
+        top_categories = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_cat_str = ", ".join([f"{c}: {round(a, 1)}€" for c, a in top_categories])
+        
+        # Calcul des abonnements
+        subs_total = cat_totals.get("Subs", 0) + cat_totals.get("Transfer", 0)
+        
+        # Total dépenses non essentielles
+        non_essential = sum(t.amount for t in db_tx if not t.is_essential)
+        essential = sum(t.amount for t in db_tx if t.is_essential)
+        
+        behavior_insights = f"""
+        Behavioral Analysis:
+        - Top spending categories: {top_cat_str}
+        - Essential expenses: {round(essential, 1)}€
+        - Non-essential expenses: {round(non_essential, 1)}€
+        - Subscriptions/Transfers: {round(subs_total, 1)}€
+        - Total transactions: {len(db_tx)}
+        - Average transaction: {round(analysis["total_spent"] / len(db_tx), 1)}€
+        """
+
+    # 3. Récupérer la mémoire persistante depuis la base (30 derniers messages)
+    db_memory = db.query(ChatMemory).filter(
+        ChatMemory.user_id == current_user.id
+    ).order_by(ChatMemory.created_at.desc()).limit(30).all()
+    db_memory.reverse()
+
+    # 4. System prompt enrichi avec profil complet
+    system_instructions = {
+        "role": "system",
+        "content": f"""
+        You are SmartSave AI, a world-class personal financial coach with deep knowledge of the user.
+        
+        USER PROFILE:
+        - Name: {current_user.full_name}
+        - Situation: {current_user.situation}
+        - Monthly Income: {current_user.monthly_income}€
+        - Monthly Budget: {budget}€
+        - Member since: {current_user.created_at.strftime("%B %Y")}
+        
+        CURRENT FINANCIAL STATUS:
+        - Serenity Score: {analysis["score"]}/100
+        - Total Spent: {analysis["total_spent"]}€
+        - Remaining Budget: {round(budget - analysis["total_spent"], 1)}€
+        - Status: {analysis["status"]}
+        
+        {behavior_insights}
+        
+        RECENT TRANSACTIONS: {tx_summary}
+        
+        INSTRUCTIONS:
+        1. You have MEMORY of past conversations - reference them when relevant.
+        2. Be professional, empathetic, motivating and use emojis.
+        3. Give SPECIFIC advice based on the user real data above.
+        4. If score < 50, be urgent and protective.
+        5. If score > 80, be encouraging and suggest investment/savings goals.
+        6. Detect spending patterns and warn about them proactively.
+        7. ALWAYS reply in the SAME language as the user (French, English, Arabic).
+        8. Keep responses concise but impactful (max 150 words).
+        """
     }
 
-    # 4. Préparation des insights (Top Categories)
-    category_insights = []
-    for name, amt in sorted(cat_totals.items(), key=lambda x: x[1], reverse=True):
-        percentage = int((amt / total_spent * 100)) if total_spent > 0 else 0
-        is_high = percentage > 30 # Alerte si > 30% des dépenses totales
-        
-        category_insights.append({
-            "name": name,
-            "amount": round(amt, 2),
-            "percentage": percentage,
-            "icon": icons.get(name, "fa-tag"),
-            "color": "#EF4444" if is_high else "#10B981", # Rouge si élevé, Vert sinon
-            "status": "High Spending" if is_high else "On track"
-        })
+    # 5. Construire le contexte avec mémoire persistante
+    memory_messages = [{"role": m.role, "content": m.content} for m in db_memory]
+    chat_context = [system_instructions] + memory_messages
+    chat_context.append({"role": "user", "content": user_msg})
 
-    # 5. Logique des graphiques (Labels & Values)
-    if period == "week":
-        labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        values = [0.0] * 7
-        for t in tx_list:
-            dt = t.date if hasattr(t, 'date') else datetime.now()
-            # dt.weekday() donne 0 pour Lundi, 6 pour Dimanche
-            values[dt.weekday()] += float(t.amount if hasattr(t, 'amount') else t['amount'])
-    else:
-        # Mode mois : on découpe en 4 semaines
-        labels = ["Week 1", "Week 2", "Week 3", "Week 4"]
-        values = [0.0] * 4
-        now = datetime.now()
-        for t in tx_list:
-            dt = t.date if hasattr(t, 'date') else now
-            day_of_month = dt.day
-            # Attribution à une semaine (1-7, 8-14, 15-21, 22+)
-            if day_of_month <= 7: values[0] += float(t.amount)
-            elif day_of_month <= 14: values[1] += float(t.amount)
-            elif day_of_month <= 21: values[2] += float(t.amount)
-            else: values[3] += float(t.amount)
-
-    # 6. Envoi au template
-    return templates.TemplateResponse("analytics.html", {
-        "request": request,
-        "total_spent": round(total_spent, 2),
-        "labels": labels,
-        "values": values,
-        "period": period,
-        "category_insights": category_insights
-    })
-@router.get("/coach", response_class=HTMLResponse)
-async def read_coach(request: Request):
-    analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
-    return templates.TemplateResponse("coach.html", {
-        "request": request, 
-        "analysis": analysis
-    })
-# route  delete card by id
-@router.delete("/delete-card/{card_id}")
-async def delete_card(card_id: int, db: Session = Depends(get_db)):
+    # 6. Appel au coach IA
     try:
-        card = db.query(BankCard).filter(BankCard.id == card_id).first()
-        if not card:
-            raise HTTPException(status_code=404, detail="Card not found")
-        
-        db.delete(card)
+        advice = coach.get_financial_advice(chat_context, analysis["score"], tx_summary)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"response": f"Erreur coach: {str(e)}"}
+
+    # 7. Sauvegarder en base de données (mémoire persistante)
+    try:
+        db.add(ChatMemory(user_id=current_user.id, role="user", content=user_msg))
+        db.add(ChatMemory(user_id=current_user.id, role="assistant", content=advice))
         db.commit()
-        return {"status": "success", "message": "Card deleted"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Memory save error: {e}")
+
+    return {"response": advice}
+
+@router.get("/generate-report")
+async def generate_report(request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    db_tx = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+    if not db_tx:
+        return {"report": "No transactions found. Add some expenses to get an AI analysis! 💸"}
+    summary = "\n".join([f"- {t.merchant}: {t.amount}€ ({t.category})" for t in db_tx[-20:]])
+    budget = get_user_budget(current_user)
+    prompt = [
+        {"role": "system", "content": "You are a professional financial advisor. Analyze the user's spending and provide a structured, motivating report with emojis."},
+        {"role": "user", "content": f"Transactions:\n{summary}\nBudget: {budget}€\nProvide a monthly summary and 3 tips."}
+    ]
+    report = coach.get_financial_advice(prompt, 100, "Monthly Review")
+    return {"report": report}
+
+@router.post("/calculate-plan")
+async def calculate_plan(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    goal_name = payload.get("name")
+    target_amount = float(payload.get("target"))
+    db_tx = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+    tx_list = db_tx if db_tx else MOCK_TRANSACTIONS
+    analysis = SerenityEngine.analyze_finances(tx_list)
+    prompt = [
+        {"role": "system", "content": "You are an expert financial coach. Provide motivating savings plans."},
+        {"role": "user", "content": f"User: {current_user.full_name}, Situation: {current_user.situation}.\nWants to save {target_amount}€ for: '{goal_name}'.\nCurrent spending: {analysis['total_spent']}€.\nProvide: 1. Analysis 2. Daily/weekly savings 3. Two tips 4. Motivational closing. Use emojis."}
+    ]
+    plan_advice = coach.get_financial_advice(prompt, analysis["score"], "General")
+    return {"plan": plan_advice}
+
+@router.post("/reset-data")
+async def reset_data(request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        db.query(Transaction).filter(Transaction.user_id == current_user.id).delete()
+        db.query(Goal).filter(Goal.user_id == current_user.id).delete()
+        db.commit()
+        return {"status": "success", "message": "All data cleared"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
-    
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-#route for adding a transaction with card logic
-@router.post("/add-transaction")
-async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_db)):
+@router.get("/export-csv")
+async def export_csv(request: Request, db: Session = Depends(get_db)):
     try:
-        # 1. On crée la transaction normalement
-        new_tx = Transaction(
-            merchant=payload.get("merchant"),
-            amount=float(payload.get("amount")),
-            category=payload.get("category"),
-            is_essential=payload.get("is_essential", False),
-        )
-        db.add(new_tx)
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
 
-        # 2. LOGIQUE DE LA CARTE : On vérifie si un card_id est envoyé
-        card_id = payload.get("card_id")
-        if card_id:
-            # On cherche la carte dans la base
-            card = db.query(BankCard).filter(BankCard.id == int(card_id)).first()
-            if card:
-                # On soustrait le montant de la dépense du solde de la carte
-                # Note: Assure-toi d'avoir un champ 'balance' dans ton modèle BankCard
-                if hasattr(card, 'balance'):
-                    card.balance -= float(payload.get("amount"))
-        
-        # 3. On valide tout en une seule fois
-        db.commit()
-        db.refresh(new_tx)
-        
-        return {"status": "success", "transaction": new_tx.merchant}
-    
+    transactions = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Date', 'Merchant', 'Category', 'Amount', 'Essential'])
+    for tx in transactions:
+        writer.writerow([tx.date.strftime('%Y-%m-%d'), tx.merchant, tx.category, tx.amount, tx.is_essential])
+    output.seek(0)
+    return StreamingResponse(output, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=smartsave_report.csv"})
+
+@router.get("/export-pdf")
+async def export_pdf(request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    transactions = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"SmartSave - Report for {current_user.full_name}", ln=True, align='C')
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(40, 10, "Date", 1)
+    pdf.cell(60, 10, "Merchant", 1)
+    pdf.cell(40, 10, "Category", 1)
+    pdf.cell(40, 10, "Amount", 1)
+    pdf.ln()
+    pdf.set_font("Arial", '', 10)
+    total = 0
+    for tx in transactions:
+        merchant_clean = tx.merchant.encode('latin-1', 'ignore').decode('latin-1')
+        category_clean = tx.category.encode('latin-1', 'ignore').decode('latin-1')
+        pdf.cell(40, 10, tx.date.strftime('%Y-%m-%d'), 1)
+        pdf.cell(60, 10, merchant_clean, 1)
+        pdf.cell(40, 10, category_clean, 1)
+        pdf.cell(40, 10, f"{tx.amount} EUR", 1)
+        pdf.ln()
+        total += tx.amount
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, txt=f"TOTAL: {total} EUR", ln=True)
+    pdf_output = pdf.output(dest='S')
+    if isinstance(pdf_output, str):
+        pdf_output = pdf_output.encode('latin-1')
+    return StreamingResponse(BytesIO(pdf_output), media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=smartsave_report.pdf"})
+
+@router.post("/scan-receipt")
+async def scan_receipt(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+        extracted_data = OCREngine.extract_data(contents)
+        return {"status": "success", "data": extracted_data}
     except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error adding transaction: {str(e)}")
-    
-    #scan card
+        return {"status": "error", "message": str(e)}
+
 @router.post("/scan-card")
 async def scan_card(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         prompt = "Analyze this credit card image. Extract ONLY: Bank Name (bank_name), Last 4 digits (last_four), Holder name (holder), Expiration (expiry) as MM/YY. Return valid JSON."
-
-        # Utilisation sécurisée du client AI
         response = ai_client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=[
-                prompt,
-                {"mime_type": "image/jpeg", "data": contents}
-            ]
+            model="gemini-2.0-flash",
+            contents=[prompt, {"mime_type": "image/jpeg", "data": contents}]
         )
-
         raw_text = response.text.strip().replace('```json', '').replace('```', '')
         return {"status": "success", "data": json.loads(raw_text)}
     except Exception as e:
         traceback.print_exc()
         return {"status": "error", "message": str(e)}
-    
-    # Route for spending analysis with Gemini AI
+
 @router.post("/analyze-spending")
-async def analyze_spending(db: Session = Depends(get_db)):
-    """
-    AI-powered anomaly detection to find unusual spending patterns.
-    """
+async def analyze_spending(request: Request, db: Session = Depends(get_db)):
     try:
-        # 1. Fetch recent transactions for context
-        transactions = db.query(Transaction).order_by(Transaction.date.desc()).limit(20).all()
-        
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        transactions = db.query(Transaction).filter(
+            Transaction.user_id == current_user.id
+        ).order_by(Transaction.date.desc()).limit(20).all()
         if not transactions:
             return {"status": "info", "message": "Not enough data for analysis."}
-
-        # 2. Prepare the summary for Gemini
         summary = "\n".join([f"{t.merchant}: {t.amount}€ ({t.category})" for t in transactions])
-        
-        prompt = f"""
-        Analyze these recent transactions for Saleh:
-        {summary}
-        
-        Budget Limit: {USER_CONFIG['monthly_budget']}€
-        
-        Your task:
-        Identify any financial anomalies (e.g., unusual price spikes, suspicious merchants, 
-        or overspending in non-essential categories).
-        
-        Return ONLY a JSON object with:
-        - 'has_anomaly' (boolean)
-        - 'severity' (string: 'low', 'medium', 'high')
-        - 'reason' (string in English)
-        - 'advice' (string in English)
-        """
-
-        # 3. Call Gemini AI
-        response = ai_client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=[prompt]
-        )
-        
-        # 4. Parse and return the AI analysis
+        budget = get_user_budget(current_user)
+        prompt = f"Analyze transactions for {current_user.full_name}:\n{summary}\nBudget: {budget}€\nReturn ONLY JSON with: 'has_anomaly' (bool), 'severity' (low/medium/high), 'reason' (string), 'advice' (string)"
+        response = ai_client.models.generate_content(model="gemini-2.0-flash", contents=[prompt])
         analysis = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
         return {"status": "success", "analysis": analysis}
-
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
-
-    #route for goals prediction
 
 @router.get("/goal-prediction/{goal_id}")
-async def goal_prediction(goal_id: int, db: Session = Depends(get_db)):
+async def goal_prediction(goal_id: int, request: Request, db: Session = Depends(get_db)):
     try:
-        # 1. Récupérer l'objectif
-        goal = db.query(Goal).filter(Goal.id == goal_id).first()
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        goal = db.query(Goal).filter(
+            Goal.id == goal_id,
+            Goal.user_id == current_user.id
+        ).first()
         if not goal:
             return {"status": "error", "prediction": "Goal not found"}
-
-        # 2. Calculer les finances actuelles
-        db_tx = db.query(Transaction).all()
-        # Assure-toi que SerenityEngine est bien importé
-        analysis = SerenityEngine.analyze_finances(db_tx, budget=USER_CONFIG["monthly_budget"])
-        
-        # Capacité d'épargne = Budget Limite - Dépenses Réelles
-        monthly_savings_capacity = USER_CONFIG["monthly_budget"] - analysis['total_spent']
-        remaining_amount = goal.target - goal.current
-
-        # 3. Logique de prédiction avec sécurité contre la division par zéro
-        if remaining_amount <= 0:
-            prediction_text = "Goal reached! 🏆 Congratulations!"
-        elif monthly_savings_capacity <= 0:
-            prediction_text = "Analysis: Budget is full. Reduce spending to start saving! ⚠️"
+        db_tx = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+        budget = get_user_budget(current_user)
+        analysis = SerenityEngine.analyze_finances(db_tx, budget=budget)
+        monthly_savings = budget - analysis['total_spent']
+        remaining = goal.target - goal.current
+        if remaining <= 0:
+            prediction_text = "Goal reached! Congratulations! 🏆"
+        elif monthly_savings <= 0:
+            prediction_text = "Budget is full. Reduce spending to start saving! ⚠️"
         else:
-            months = round(remaining_amount / monthly_savings_capacity, 1)
+            months = round(remaining / monthly_savings, 1)
             if months > 12:
                 years = round(months / 12, 1)
                 prediction_text = f"ETA: {years} years at your current pace 🐢"
             else:
                 prediction_text = f"ETA: {months} months at your current pace 🚀"
+        return {"status": "success", "prediction": prediction_text}
+    except Exception as e:
+        return {"status": "error", "prediction": "Prediction unavailable"}
 
-        return {
-            "status": "success",
-            "prediction": prediction_text
-        }
+# --- IMPORT CSV BANCAIRE ---
+from services.csv_importer import CSVImporter, StatementImageParser
+
+@router.post("/import-csv")
+async def import_csv(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        contents = await file.read()
+        transactions = CSVImporter.import_csv(contents)
+
+        if not transactions:
+            return {"status": "error", "message": "Aucune transaction détectée. Vérifiez votre fichier."}
+
+        count = 0
+        for tx in transactions:
+            new_tx = Transaction(
+                merchant=tx.get("merchant", "Unknown")[:50],
+                amount=float(tx.get("amount", 0)),
+                category=tx.get("category", "Other"),
+                is_essential=tx.get("is_essential", False),
+                user_id=current_user.id
+            )
+            db.add(new_tx)
+            count += 1
+
+        db.commit()
+        return {"status": "success", "imported": count, "message": f"{count} transactions importées avec succès !"}
 
     except Exception as e:
-        # Affiche l'erreur exacte dans ton terminal noir pour débugger
-        print(f"DEBUG PREDICTION ERROR: {str(e)}")
-        return {"status": "error", "prediction": "Prediction unavailable"}
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/import-statement-image")
+async def import_statement_image(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        contents = await file.read()
+        transactions = StatementImageParser.parse_image(contents)
+
+        if not transactions:
+            return {"status": "error", "message": "Aucune transaction détectée dans l'image."}
+
+        count = 0
+        for tx in transactions:
+            new_tx = Transaction(
+                merchant=tx.get("merchant", "Unknown")[:50],
+                amount=float(tx.get("amount", 0)),
+                category=tx.get("category", "Other"),
+                is_essential=tx.get("is_essential", False),
+                user_id=current_user.id
+            )
+            db.add(new_tx)
+            count += 1
+
+        db.commit()
+        return {"status": "success", "imported": count, "message": f"{count} transactions importées depuis l'image !"}
+
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/import-pdf")
+async def import_pdf(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        contents = await file.read()
+        from services.csv_importer import PDFStatementParser
+        transactions = PDFStatementParser.parse_pdf(contents)
+
+        if not transactions:
+            return {"status": "error", "message": "Aucune transaction détectée dans le PDF."}
+
+        count = 0
+        for tx in transactions:
+            new_tx = Transaction(
+                merchant=tx.get("merchant", "Unknown")[:50],
+                amount=float(tx.get("amount", 0)),
+                category=tx.get("category", "Other"),
+                is_essential=tx.get("is_essential", False),
+                user_id=current_user.id
+            )
+            db.add(new_tx)
+            count += 1
+
+        db.commit()
+        return {"status": "success", "imported": count, "message": f"{count} transactions importées depuis le PDF !"}
+
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
+
+# --- GESTION DU DÉCOUVERT ---
+from services.overdraft_manager import OverdraftManager
+
+@router.get("/overdraft-status")
+async def get_overdraft_status(request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    status = OverdraftManager.detect_overdraft(
+        current_user.current_balance,
+        current_user.overdraft_limit
+    )
+    return {"status": "success", "overdraft": status, "balance": current_user.current_balance}
+
+
+@router.post("/update-balance")
+async def update_balance(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    try:
+        current_user.current_balance = float(payload.get("balance", 0))
+        current_user.overdraft_limit = float(payload.get("overdraft_limit", 0))
+        db.commit()
+        
+        status = OverdraftManager.detect_overdraft(
+            current_user.current_balance,
+            current_user.overdraft_limit
+        )
+        return {"status": "success", "overdraft": status}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/recovery-plan")
+async def get_recovery_plan(request: Request, db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+
+    if current_user.current_balance >= 0:
+        return {"status": "info", "message": "Pas de découvert détecté ! Votre solde est positif."}
+
+    db_tx = db.query(Transaction).filter(
+        Transaction.user_id == current_user.id
+    ).order_by(Transaction.date.desc()).limit(30).all()
+
+    plan = OverdraftManager.generate_recovery_plan(
+        user_name=current_user.full_name,
+        current_balance=current_user.current_balance,
+        monthly_income=current_user.monthly_income,
+        transactions=db_tx,
+        situation=current_user.situation
+    )
+
+    tips = OverdraftManager.get_quick_savings_tips(db_tx, abs(current_user.current_balance))
+
+    return {
+        "status": "success",
+        "plan": plan,
+        "tips": tips,
+        "overdraft_amount": abs(current_user.current_balance)
+    }
+
+
+@router.get("/transactions", response_class=HTMLResponse)
+async def read_transactions(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db_tx = db.query(Transaction).filter(
+        Transaction.user_id == current_user.id
+    ).order_by(Transaction.date.desc()).all()
+
+    budget = get_user_budget(current_user)
+    analysis = SerenityEngine.analyze_finances(db_tx, budget=budget)
+
+    return templates.TemplateResponse("transactions.html", {
+        "request": request,
+        "name": current_user.full_name,
+        "transactions": db_tx,
+        "total_spent": analysis["total_spent"],
+        "budget": budget
+    })
+
+
+@router.get("/profile", response_class=HTMLResponse)
+async def read_profile(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        return RedirectResponse(url="/login", status_code=302)
+
+    budget = get_user_budget(current_user)
+
+    return templates.TemplateResponse("profile.html", {
+        "request": request,
+        "user": current_user,
+        "budget": budget
+    })
+
+
+@router.post("/update-profile")
+async def update_profile(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        current_user = get_current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Non connecté")
+    try:
+        if "full_name" in payload:
+            current_user.full_name = payload["full_name"]
+        if "monthly_income" in payload:
+            current_user.monthly_income = float(payload["monthly_income"])
+        if "situation" in payload:
+            current_user.situation = payload["situation"]
+        if "current_balance" in payload:
+            current_user.current_balance = float(payload["current_balance"])
+        if "overdraft_limit" in payload:
+            current_user.overdraft_limit = float(payload["overdraft_limit"])
+        db.commit()
+        return {"status": "success", "message": "Profil mis à jour !"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))

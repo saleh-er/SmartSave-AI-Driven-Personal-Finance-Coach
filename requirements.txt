@@ -1,5 +1,14 @@
 fastapi
 uvicorn
-openai
 python-dotenv
 pydantic
+sqlalchemy
+psycopg2-binary
+groq
+google-genai
+fpdf2
+python-multipart
+jinja2
+python-jose[cryptography]
+passlib[bcrypt]
+pypdf

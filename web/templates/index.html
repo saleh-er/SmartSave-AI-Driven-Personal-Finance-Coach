@@ -1,453 +1,372 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSave - Home</title>
+    <title>SmartSave</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @keyframes pulse-danger {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
-            70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-        .pulse-active { animation: pulse-danger 2s infinite; }
-        .ai-feed { cursor: pointer; transition: transform 0.2s; }
-        .ai-feed:hover { transform: translateY(-3px); border-color: var(--accent-teal); }
-
-        .btn-settings-top {
-            color: white; background: rgba(255, 255, 255, 0.05); width: 42px; height: 42px; 
-            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            border: 1px solid rgba(255, 255, 255, 0.1); text-decoration: none; transition: all 0.3s ease;
-        }
-
-        .transaction-form-inner { display: flex; flex-direction: column; gap: 12px; }
-        .form-row { display: flex; gap: 10px; margin-bottom: 5px; }
-        .form-row input, .form-row select {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white; padding: 10px; border-radius: 8px; flex: 1; outline: none;
-        }
-
-        #scanned-items-container {
-            max-height: 200px; overflow-y: auto; background: rgba(255, 255, 255, 0.02);
-            border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .cards-slider { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
-        .cards-slider::-webkit-scrollbar { display: none; }
-        
-        .bank-card-visual {
-            min-width: 280px; height: 170px; border-radius: 20px; padding: 20px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);
-        }
-        .theme-purple { background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(30, 41, 59, 0.8)); }
-        .theme-teal { background: linear-gradient(135deg, rgba(20, 184, 166, 0.4), rgba(30, 41, 59, 0.8)); }
-        
-        .card-number-display { font-family: 'Courier New', monospace; letter-spacing: 2px; font-size: 1.2rem; margin: 15px 0; }
-        
-        #card-modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 1000; width: 90%; max-width: 400px; padding: 25px;
-        }
-        #modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 999;
-        }
-    </style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080E1A;color:#F1F5F9;font-family:Inter,-apple-system,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;padding-bottom:90px}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 12px;background:#080E1A;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:100}
+.logo{font-size:1.4rem;font-weight:800}.logo span{color:#10B981}
+.avatar-btn{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#10B981);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;text-decoration:none;color:white}
+.score-widget{display:flex;align-items:center;gap:16px;padding:20px;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(16,185,129,0.05));border-bottom:1px solid rgba(255,255,255,0.07)}
+.score-ring{width:80px;height:80px;border-radius:50%;background:#080E1A;border:3px solid #10B981;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 20px rgba(16,185,129,0.25)}
+.score-ring .num{font-size:1.6rem;font-weight:900;line-height:1}
+.score-ring .lbl{font-size:0.45rem;color:#64748b;text-transform:uppercase;letter-spacing:1px}
+.score-info{flex:1}.score-info h2{font-size:1rem;font-weight:700;margin-bottom:4px}
+.score-info .status{font-size:0.75rem;margin-bottom:8px}
+.budget-bar{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.budget-fill{height:100%;background:linear-gradient(90deg,#6366F1,#10B981);border-radius:3px}
+.budget-text{font-size:0.68rem;color:#64748b;margin-top:5px}
+.alert{display:flex;align-items:center;gap:12px;border-radius:16px;padding:14px;margin:12px 20px 0}
+.alert.danger{background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2)}
+.alert-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem;background:rgba(239,68,68,0.12)}
+.alert-body{flex:1}.a-title{font-size:0.82rem;font-weight:700;color:#EF4444}.a-sub{font-size:0.7rem;color:#64748b;margin-top:2px}
+.btn-sm{padding:7px 12px;border-radius:10px;font-size:0.7rem;font-weight:700;border:none;cursor:pointer}
+.btn-danger{background:#EF4444;color:white}
+.section{padding:16px 20px 0}
+.section-title{font-size:0.65rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:14px}
+.stat-card .s-label{font-size:0.65rem;color:#64748b;margin-bottom:6px}
+.stat-card .s-value{font-size:1.2rem;font-weight:800}
+.stat-card .s-sub{font-size:0.65rem;color:#64748b;margin-top:2px}
+.text-teal{color:#10B981}.text-red{color:#EF4444}.text-purple{color:#6366F1}.text-amber{color:#F59E0B}
+.import-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.import-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;width:100%}
+.ib-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700}
+.ib-label{font-size:0.65rem;font-weight:600;color:#64748b}
+.tx-list{display:flex;flex-direction:column;gap:8px}
+.tx-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 14px}
+.tx-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.tx-info{flex:1;min-width:0}.tx-name{font-size:0.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-cat{font-size:0.7rem;color:#64748b;margin-top:2px}.tx-amount{font-size:0.9rem;font-weight:700;color:#EF4444}
+.tx-delete{background:none;border:none;color:#64748b;cursor:pointer;padding:4px;font-size:0.85rem}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(8,14,26,0.97);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.07);display:flex;padding:8px 16px 20px;z-index:200}
+.nav-link{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#64748b;padding:8px 4px;border-radius:12px;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.nav-link i{font-size:1.1rem}.nav-link.active{color:#6366F1}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:430px;max-height:85vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.form-label{font-size:0.72rem;color:#64748b;font-weight:600}
+.form-input,.form-select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);border-radius:12px;color:#F1F5F9;padding:11px 14px;font-size:0.88rem;outline:none;width:100%}
+.btn-full{width:100%;padding:13px;border-radius:14px;font-size:0.9rem;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,#6366F1,#10B981);color:white;margin-top:8px}
+#notif-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-left:3px solid #10B981;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:0.85rem}
+</style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="notification-container"></div>
-    <div id="modal-overlay" onclick="closeCardModal()"></div>
-    
-    <div id="card-modal" class="glass-card">
-        <h3 style="margin-bottom:20px;">Add New Bank Card 💳</h3>
-        
-        <div class="scan-container" id="card-scan-zone" onclick="document.getElementById('card-upload').click()" style="margin-bottom: 20px; border: 2px dashed var(--accent-teal); cursor: pointer;">
-            <div class="scan-icon-wrapper" style="background: var(--primary-gradient);">
-                <i class="fas fa-credit-card"></i>
-            </div>
-            <div class="scan-text">
-                <h4>Scan Your Card</h4>
-                <p>Tap to capture details via AI</p>
-            </div>
-            <input type="file" id="card-upload" accept="image/*" capture="environment" style="display: none;" onchange="processCardScan(this)">
-        </div>
-  
+<div id="notif-container"></div>
 
-
-
-<div id="ai-alert" class="glass-card" style="display:none; border-left: 5px solid #EF4444; margin-bottom: 20px;">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <div style="background: #FEE2E2; padding: 10px; border-radius: 50%;">
-            <i class="fas fa-robot" style="color: #EF4444;"></i>
+<!-- MODAL DÉCOUVERT -->
+<div class="modal-overlay" id="recoveryOverlay">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Plan de sortie du découvert 🚨</div>
+        <div id="recovery-tips-list" style="margin-bottom:14px;"></div>
+        <div id="recovery-plan-content" style="font-size:0.85rem;line-height:1.6;color:#94a3b8;white-space:pre-wrap;"></div>
+        <div id="recovery-loading" style="text-align:center;padding:20px;color:#64748b;">
+            <i class="fas fa-spinner fa-spin fa-lg"></i>
+            <p style="margin-top:8px;font-size:0.8rem;">L'IA analyse votre situation...</p>
         </div>
-        <div>
-            <h4 style="margin: 0; color: #1F2937;">AI Security Alert</h4>
-            <p id="anomaly-text" style="margin: 5px 0 0 0; font-size: 0.85rem; color: #4B5563;"></p>
-        </div>
+        <button class="btn-full" style="margin-top:16px;" onclick="closeModal('recoveryOverlay')">Fermer</button>
     </div>
 </div>
 
+<!-- MODAL AJOUTER TRANSACTION -->
+<div class="modal-overlay" id="txOverlay">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Ajouter une dépense</div>
+        <div class="form-group">
+            <label class="form-label">Marchand / Description</label>
+            <input type="text" id="tx-merchant" class="form-input" placeholder="Ex: Carrefour">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Montant (€)</label>
+            <input type="number" id="tx-amount" class="form-input" placeholder="0.00" step="0.01">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Catégorie</label>
+            <select id="tx-category" class="form-select">
+                <option value="Food">🍔 Alimentation</option>
+                <option value="Transport">🚗 Transport</option>
+                <option value="Housing">🏠 Logement</option>
+                <option value="Bills">💡 Factures</option>
+                <option value="Shopping">🛍️ Shopping</option>
+                <option value="Health">❤️ Santé</option>
+                <option value="Entertainment">🎮 Loisirs</option>
+                <option value="Subs">📺 Abonnements</option>
+                <option value="Transfer">💸 Transfert</option>
+                <option value="Other">📦 Autre</option>
+            </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <input type="checkbox" id="tx-essential" checked style="width:16px;height:16px;">
+            <label for="tx-essential" class="form-label" style="margin:0;">Dépense essentielle</label>
+        </div>
+        <button class="btn-full" onclick="submitTransaction()">
+            <i class="fas fa-plus"></i> Ajouter
+        </button>
+    </div>
+</div>
 
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="importOverlay">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Importer un relevé bancaire</div>
+        <p style="font-size:0.8rem;color:#64748b;margin-bottom:16px;">Compatible avec toutes les banques — BNP, Société Générale, CIC, Revolut...</p>
+        
+        <div id="import-status" style="display:none;padding:12px;border-radius:12px;margin-bottom:12px;font-size:0.82rem;"></div>
+        
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <label style="display:flex;align-items:center;gap:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:14px;cursor:pointer;">
+                <div style="width:40px;height:40px;background:rgba(99,102,241,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6366F1;font-weight:700;flex-shrink:0;">CSV</div>
+                <div>
+                    <div style="font-weight:700;font-size:0.88rem;">Import CSV</div>
+                    <div style="font-size:0.72rem;color:#64748b;">Fichier exporté depuis votre banque</div>
+                </div>
+                <input type="file" accept=".csv" style="display:none" onchange="importFile(this,'csv')">
+            </label>
+            
+            <label style="display:flex;align-items:center;gap:12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:14px;padding:14px;cursor:pointer;">
+                <div style="width:40px;height:40px;background:rgba(239,68,68,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#EF4444;font-weight:700;flex-shrink:0;">PDF</div>
+                <div>
+                    <div style="font-weight:700;font-size:0.88rem;">Import PDF</div>
+                    <div style="font-size:0.72rem;color:#64748b;">Relevé PDF de votre banque</div>
+                </div>
+                <input type="file" accept=".pdf" style="display:none" onchange="importFile(this,'pdf')">
+            </label>
+            
+            <label style="display:flex;align-items:center;gap:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:14px;padding:14px;cursor:pointer;">
+                <div style="width:40px;height:40px;background:rgba(16,185,129,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#10B981;font-size:1.1rem;flex-shrink:0;"><i class="fas fa-camera"></i></div>
+                <div>
+                    <div style="font-weight:700;font-size:0.88rem;">Scanner un relevé</div>
+                    <div style="font-size:0.72rem;color:#64748b;">Photo de votre relevé papier</div>
+                </div>
+                <input type="file" accept="image/*" capture="environment" style="display:none" onchange="importFile(this,'image')">
+            </label>
+        </div>
+        <button class="btn-full" style="margin-top:16px;background:rgba(255,255,255,0.05);color:#64748b;" onclick="closeModal('importOverlay')">Annuler</button>
+    </div>
+</div>
 
+<div class="app">
+    <!-- HEADER -->
+    <header class="app-header">
+        <div class="logo">Smart<span>Save</span></div>
+        <div class="header-right">
+            <a href="/profile" class="avatar-btn">{{ name[0]|upper if name else "U" }}</a>
+        </div>
+    </header>
 
-        <div class="transaction-form-inner">
-            <input type="text" id="card-bank" placeholder="Bank Name (ex: Revolut)">
-            <input type="text" id="card-holder" placeholder="Card Holder Name">
-            <div class="form-row">
-                <input type="text" id="card-last-four" placeholder="Last 4" maxlength="4">
-                <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5">
+    <!-- SCORE WIDGET -->
+    <div class="score-widget">
+        <div class="score-ring">
+            <span class="num">{{ score|int if score else 0 }}</span>
+            <span class="lbl">Score</span>
+        </div>
+        <div class="score-info">
+            <h2>Bonjour, {{ name }} 👋</h2>
+            <p class="status text-{{ "teal" if score > 80 else "amber" if score > 50 else "red" }}">
+                {{ status if status else "—" }}
+            </p>
+            <div class="budget-bar">
+                <div class="budget-fill" style="width: {{ [(budget - remaining) / budget * 100, 100]|min|int if budget > 0 else 0 }}%"></div>
             </div>
-            <div class="form-row">
-                <select id="card-type">
-                    <option value="visa">Visa</option>
-                    <option value="mastercard">Mastercard</option>
-                </select>
-                <select id="card-color">
-                    <option value="purple">Neon Purple</option>
-                    <option value="teal">Emerald Teal</option>
-                </select>
+            <p class="budget-text">{{ (budget - remaining)|int }}€ dépensés sur {{ budget|int }}€</p>
+        </div>
+    </div>
+
+    <!-- ALERTE DÉCOUVERT -->
+    <div id="overdraft-alert" style="display:none;" class="alert danger">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+            <div class="a-title" id="overdraft-msg">Découvert détecté</div>
+            <div class="a-sub">Obtenez un plan IA personnalisé</div>
+        </div>
+        <button class="btn-sm btn-danger" onclick="getRecoveryPlan()">Plan IA</button>
+    </div>
+
+    <!-- STATS -->
+    <div class="section mt-16">
+        <div class="section-title">Résumé du mois</div>
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="s-label">Dépensé</div>
+                <div class="s-value text-red">{{ (budget - remaining)|int }}€</div>
+                <div class="s-sub">ce mois</div>
             </div>
-            <div class="form-row" style="margin-top:15px;">
-                <button onclick="closeCardModal()" style="background:rgba(239,68,68,0.2); color:#EF4444; border:none; padding:10px; border-radius:8px; flex:1;">Cancel</button>
-                <button onclick="submitNewCard()" style="background:var(--primary-gradient); color:white; border:none; padding:10px; border-radius:8px; flex:2; font-weight:bold;">Save Card</button>
+            <div class="stat-card">
+                <div class="s-label">Restant</div>
+                <div class="s-value text-teal">{{ remaining|int }}€</div>
+                <div class="s-sub">disponible</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-label">Transactions</div>
+                <div class="s-value text-purple">{{ transactions|length }}</div>
+                <div class="s-sub">ce mois</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-label">Budget</div>
+                <div class="s-value">{{ budget|int }}€</div>
+                <div class="s-sub">mensuel</div>
             </div>
         </div>
     </div>
 
-    <div class="app-container">
-        <header class="brand-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
-            <div>
-                <h1 class="logo">Smart<span>Save</span></h1>
-                <p class="tagline">Welcome back, Saleh ✨</p>
-            </div>
-            <a href="/settings" class="btn-settings-top"><i class="fas fa-cog"></i></a>
-        </header>
 
-        <main>
-            <div class="score-container">
-                <div class="glass-sphere">
-                    <div class="serenity-ring" id="serenityRing">
-                        <div class="score-content">
-                            <span class="score-number" id="scoreValue">{{ score|int if score else 0 }}</span>
-                            <span class="score-text">Serenity Score</span>
-                            <i class="fas fa-chart-line status-icon"></i>
-                        </div>
-                    </div>
-                    <div class="glass-reflection"></div>
-                </div>
-            </div>
 
-            <section style="margin-bottom: 25px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 1rem; font-weight: 800;">My Wallet 💳</h3>
-                    <button onclick="openCardModal()" style="background:none; border:none; color:var(--accent-teal); font-size:0.8rem; font-weight:700; cursor:pointer;">+ NEW CARD</button>
-                </div>
-                <div class="cards-slider">
-                    {% if cards %}
-                        {% for card in cards %}
-                        <div class="bank-card-visual theme-{{ card.color_scheme }}">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="width:35px; height:25px; background:rgba(255,215,0,0.8); border-radius:4px;"></div>
-                                <i class="fab fa-cc-{{ card.card_type }} fa-2x" style="opacity: 0.9;"></i>
-                            </div>
-                            <div class="card-number-display">•••• •••• •••• {{ card.last_four }}</div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">
-                                <span>{{ card.card_holder }}</span>
-                                <span>{{ card.expiry_date }}</span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="glass-card" style="width:100%; padding:20px; text-align:center; border:1px dashed rgba(255,255,255,0.2);">
-                            <p style="font-size:0.8rem; color:#94a3b8;">No cards linked. Tap + to add card.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </section>
+    
 
-            <div class="glass-card balance-card" onclick="editBudget()" style="cursor: pointer; margin-bottom: 20px;">
-                <span class="card-label">Remaining (Limit: €{{ budget|int }})</span>
-                <h2 class="balance-amount">€{{ remaining }}</h2>
-                <p style="font-size: 0.75rem; color: var(--accent-teal); font-weight: 600; margin-top: 5px;">
-                    <i class="fas fa-pen"></i> Tap to adjust
-                </p>
-            </div>
-
-            <div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
-                <h3 style="font-size: 1rem; font-weight: bold; margin-bottom: 15px;">Quick Add Expense 💸</h3>
-                
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <div class="form-row" style="display: flex; gap: 10px;">
-                        <select id="tx-card-id" style="flex: 1; border: 1px solid var(--accent-teal); background: rgba(16, 185, 129, 0.05); color: white; padding: 10px; border-radius: 8px;">
-                            <option value="">💰 Cash (No Card)</option>
-                            {% for card in cards %}
-                            <option value="{{ card.id }}">💳 {{ card.bank_name }} ({{ card.last_four }})</option>
-                            {% endfor %}
-                        </select>
-                        <button onclick="deleteSelectedCard()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; color: #EF4444; width: 42px; border-radius: 8px; cursor: pointer;">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-
-                    <div class="scan-container" id="drop-zone" onclick="document.getElementById('receipt-upload').click()" style="margin: 0;">
-                        <div class="scan-icon-wrapper"><i class="fas fa-expand"></i></div>
-                        <div class="scan-text">
-                            <h4>AI Smart Scanner</h4>
-                            <p>Tap to scan receipt</p>
-                        </div>
-                        <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(this)">
-                    </div>
-
-                    <div id="scanned-items-container" style="display: none;">
-                        <h4 style="font-size: 0.75rem; color: var(--accent-teal); margin-bottom: 8px;">DETECTED ITEMS</h4>
-                        <div id="items-list"></div>
-                    </div>
-
-                    <div class="form-row" style="display: flex; gap: 10px;">
-                        <input type="text" id="tx-merchant" placeholder="Store/Merchant" style="flex: 2; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;">
-                        <input type="number" id="tx-amount" placeholder="€" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;">
-                    </div>
-
-                    <div class="form-row" style="display: flex; gap: 10px;">
-                        <select id="tx-category" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;">
-                            <option value="Food">Food 🍔</option>
-                            <option value="Transport">Transport 🚗</option>
-                            <option value="Housing">Housing 🏠</option>
-                            <option value="Subs">Subs 📺</option>
-                            <option value="Shopping">Shopping 🛍️</option>
-                        </select>
-                        <button id="submit-btn" onclick="submitTransaction()" style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; flex:1; cursor: pointer;">Add</button>
-                    </div>
-
-                    <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8;">
-                        <input type="checkbox" id="tx-essential" checked>
-                        <label for="tx-essential">Is this essential?</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-card tx-list-container">
-                <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Recent Transactions</h3>
-                {% if transactions %}
-                    {% for tx in transactions %}
-                    <div class="tx-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div class="tx-info">
-                            <p style="margin: 0; font-weight: 600;">{{ tx.merchant }}</p>
-                            <span style="font-size: 0.75rem; color: #94a3b8;">{{ tx.category }}</span>
-                        </div>
-                        <div class="tx-amount-group" style="display: flex; align-items: center; gap: 15px;">
-                            <span style="font-weight: 800;">€{{ tx.amount }}</span>
-                            <button onclick="deleteTransaction({{ tx.id }})" style="color: #EF4444; background: none; border: none; cursor: pointer;">
-                                <i class="fas fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p style="text-align: center; color: #94a3b8; font-size: 0.9rem;">No history available.</p>
-                {% endif %}
-            </div>
-
-            <div class="glass-card ai-feed" onclick="window.location.href='/coach'" style="margin-bottom: 120px; margin-top: 20px;">
-                <div class="ai-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <span class="ai-icon">✨</span>
-                    <span class="ai-title" style="font-weight: 800; color: var(--accent-teal);">AI Insights</span>
-                </div>
-                <p id="aiDynamicText" style="font-size: 0.9rem; color: #e2e8f0;">Analyzing...</p>
-            </div>
-        </main>
-
-        <nav class="bottom-nav">
-            <a href="/" class="nav-link active"><i class="fas fa-home"></i> <span>Home</span></a>
-            <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i> <span>Stats</span></a>
-            <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i> <span>Coach</span></a>
-            <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i> <span>Goals</span></a>
-        </nav>
+    <!-- GRAPHIQUE -->
+    <div class="section mt-16" style="padding-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div class="section-title" style="margin:0;">Évolution cette semaine</div>
+            <a href="/analytics" style="font-size:0.72rem;color:#6366F1;font-weight:700;text-decoration:none;">Voir tout →</a>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:16px;height:160px;">
+            <canvas id="homeChart"></canvas>
+        </div>
     </div>
 
-    <script>
-    // --- NOTIFICATIONS ---
-    function showNotification(message, icon = "fa-bell") {
-        const container = document.getElementById('notification-container');
-        const toast = document.createElement('div');
-        toast.className = 'toast show';
-        toast.innerHTML = `<i class="fas ${icon}"></i><p>${message}</p>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
+</div>
 
-    // --- MODAL CARD FUNCTIONS ---
-    function openCardModal() {
-        document.getElementById('card-modal').style.display = 'block';
-        document.getElementById('modal-overlay').style.display = 'block';
-    }
+<!-- NAVIGATION -->
+<nav class="bottom-nav">
+    <a href="/" class="nav-link active"><i class="fas fa-home"></i>Home</a>
+    <a href="/transactions" class="nav-link"><i class="fas fa-receipt"></i>Dépenses</a>
+    <a href="/analytics" class="nav-link"><i class="fas fa-chart-line"></i>Stats</a>
+    <a href="/coach" class="nav-link"><i class="fas fa-wand-magic-sparkles"></i>Coach</a>
+    <a href="/goals" class="nav-link"><i class="fas fa-bullseye"></i>Objectifs</a>
+</nav>
 
-    function closeCardModal() {
-        document.getElementById('card-modal').style.display = 'none';
-        document.getElementById('modal-overlay').style.display = 'none';
-    }
+<script>
+function showNotif(msg, type="success") {
+    const c = document.getElementById("notif-container");
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.style.borderLeftColor = type === "error" ? "#EF4444" : "#10B981";
+    t.innerHTML = `<i class="fas fa-${type === "error" ? "xmark" : "check"}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
 
-    // --- SCANNER LOGIQUE ---
-    async function processReceipt(input) {
-        if (input.files && input.files[0]) {
-            const dropZone = document.getElementById('drop-zone');
-            dropZone.style.opacity = "0.5";
-            showNotification("AI is analyzing...", "fa-expand");
-            let formData = new FormData();
-            formData.append("file", input.files[0]);
-            try {
-                const response = await fetch('/scan-receipt', { method: 'POST', body: formData });
-                const result = await response.json();
-                if (result.status === "success") {
-                    document.getElementById('tx-merchant').value = result.data.merchant;
-                    document.getElementById('tx-amount').value = result.data.total;
-                    const container = document.getElementById('scanned-items-container');
-                    const list = document.getElementById('items-list');
-                    list.innerHTML = "";
-                    if (result.data.items && result.data.items.length > 0) {
-                        container.style.display = "block";
-                        result.data.items.forEach(item => {
-                            const row = document.createElement('div');
-                            row.className = 'form-row item-row';
-                            row.innerHTML = `<input type="text" class="item-label" value="${item.label}" style="flex: 3; font-size: 0.75rem;"><input type="number" class="item-price" value="${item.price}" style="flex: 1; font-size: 0.75rem;"><button onclick="removeItem(this)" style="color:#EF4444; border:none; background:none;"><i class="fas fa-times"></i></button>`;
-                            list.appendChild(row);
-                        });
-                    }
-                    showNotification("Analysis complete!", "fa-check");
-                }
-            } catch (e) { showNotification("Scan error", "fa-xmark"); }
-            finally { dropZone.style.opacity = "1"; }
-        }
-    }
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
-    async function processCardScan(input) {
-        if (input.files && input.files[0]) {
-            showNotification("AI is analyzing card...", "fa-credit-card");
-            let formData = new FormData();
-            formData.append("file", input.files[0]);
-            const response = await fetch('/scan-card', { method: 'POST', body: formData });
-            const result = await response.json();
-            if (result.status === "success") {
-                document.getElementById('card-bank').value = result.data.bank_name;
-                document.getElementById('card-last-four').value = result.data.last_four;
-                document.getElementById('card-expiry').value = result.data.expiry;
-                document.getElementById('card-holder').value = result.data.holder;
-                showNotification("Details captured!", "fa-check");
-            }
-        }
-    }
+document.querySelectorAll(".modal-overlay").forEach(o => {
+    o.addEventListener("click", e => { if(e.target === o) o.classList.remove("open"); });
+});
 
-    // --- CRUD ---
-    async function submitTransaction() {
-        const merchant = document.getElementById('tx-merchant').value;
-        const amount = document.getElementById('tx-amount').value;
-        const category = document.getElementById('tx-category').value;
-        const isEssential = document.getElementById('tx-essential').checked;
-        const cardId = document.getElementById('tx-card-id').value;
-        if (!merchant || !amount) return;
-        const res = await fetch('/add-transaction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ merchant, amount: parseFloat(amount), category, is_essential: isEssential, card_id: cardId ? parseInt(cardId) : null })
-        });
-        if ((await res.json()).status === "success") location.reload();
-    }
-
-    async function submitNewCard() {
-        const cardData = {
-            bank_name: document.getElementById('card-bank').value,
-            last_four: document.getElementById('card-last-four').value,
-            card_holder: document.getElementById('card-holder').value,
-            card_type: document.getElementById('card-type').value,
-            expiry_date: document.getElementById('card-expiry').value,
-            color_scheme: document.getElementById('card-color').value
-        };
-        const response = await fetch('/add-card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cardData) });
-        if ((await response.json()).status === "success") location.reload();
-    }
-
-    async function deleteTransaction(txId) {
-        if (!confirm("Delete?")) return;
-        const res = await fetch(`/delete-transaction/${txId}`, { method: 'DELETE' });
-        if ((await res.json()).status === "success") location.reload();
-    }
-
-    async function deleteSelectedCard() {
-        const cardId = document.getElementById('tx-card-id').value;
-        if (!cardId || !confirm("Delete card?")) return;
-        const response = await fetch(`/delete-card/${cardId}`, { method: 'DELETE' });
-        if ((await response.json()).status === "success") location.reload();
-    }
-
-    window.onload = () => {
-        const score = parseInt(document.getElementById('scoreValue').innerText || 0);
-        const ring = document.getElementById('serenityRing');
-        const aiText = document.getElementById('aiDynamicText');
-        if (score >= 80) { ring.style.borderColor = "#10B981"; aiText.innerHTML = "Financial Master! 🚀"; }
-        else if (score >= 50) { ring.style.borderColor = "#F59E0B"; aiText.innerHTML = "Careful, budget is tight."; }
-        else { ring.style.borderColor = "#EF4444"; ring.classList.add('pulse-active'); aiText.innerHTML = "Emergency! Check spendings. ⚠️"; }
-    };
-
-//analyse anomalies
-async function checkFinancialAnomalies() {
+async function checkOverdraft() {
     try {
-        const response = await fetch('/analyze-spending', { method: 'POST' });
-        const data = await response.json();
-        
-        const alertDiv = document.getElementById('ai-alert');
-        const alertText = document.getElementById('anomaly-text');
-        
-        if (data.status === 'success' && data.analysis.has_anomaly) {
-            alertText.innerText = data.analysis.reason + " Recommendation: " + data.analysis.advice;
-            alertDiv.style.display = 'block';
-            
-            // change border color based on severity
-            if (data.analysis.severity === 'high') {
-                alertDiv.style.borderLeftColor = '#EF4444'; // Red
-            } else {
-                alertDiv.style.borderLeftColor = '#F59E0B'; // Orange
+        const r = await fetch("/overdraft-status");
+        const d = await r.json();
+        if (d.overdraft && d.overdraft.in_overdraft) {
+            const alert = document.getElementById("overdraft-alert");
+            alert.style.display = "flex";
+            document.getElementById("overdraft-msg").textContent = d.overdraft.message;
+        }
+    } catch(e) {}
+}
+
+async function getRecoveryPlan() {
+    openModal("recoveryOverlay");
+    document.getElementById("recovery-loading").style.display = "block";
+    document.getElementById("recovery-plan-content").textContent = "";
+    document.getElementById("recovery-tips-list").innerHTML = "";
+    try {
+        const r = await fetch("/recovery-plan");
+        const d = await r.json();
+        document.getElementById("recovery-loading").style.display = "none";
+        if (d.status === "success") {
+            document.getElementById("recovery-plan-content").textContent = d.plan;
+            if (d.tips && d.tips.length) {
+                const list = d.tips.map(t =>
+                    `<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(245,158,11,0.08);border-radius:10px;margin-bottom:6px;font-size:0.8rem;">
+                        <span>${t.merchant}</span>
+                        <span style="color:#F59E0B;font-weight:700;">-${t.amount}€</span>
+                    </div>`
+                ).join("");
+                document.getElementById("recovery-tips-list").innerHTML =
+                    `<p style="font-size:0.72rem;color:#64748b;margin-bottom:8px;">⚡ Économies immédiates possibles</p>` + list;
             }
         } else {
-            alertDiv.style.display = 'none';
+            document.getElementById("recovery-plan-content").textContent = d.message || "Aucun découvert détecté.";
         }
-    } catch (error) {
-        console.error("AI Analysis failed:", error);
-    }
-}
-// edit budget
-async function editBudget() {
-    // 1. reqquest the new budget limit
-    const currentLimit = "{{ budget|int }}";
-    const newBudget = prompt("Enter your new monthly budget limit (€):", currentLimit);
-    
-    // 2. if the user provided a value, send it to the server
-    if (newBudget !== null && newBudget !== "") {
-        try {
-            const response = await fetch('/update-budget', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ budget: parseFloat(newBudget) })
-            });
-            
-            const result = await response.json();
-            
-            if (result.status === 'success') {
-                // 3. refresh the page to reflect the new budget
-                window.location.reload();
-            } else {
-                alert("Error: " + result.detail);
-            }
-        } catch (error) {
-            console.error("Failed to update budget:", error);
-            alert("Connection error. Please try again.");
-        }
+    } catch(e) {
+        document.getElementById("recovery-loading").style.display = "none";
+        document.getElementById("recovery-plan-content").textContent = "Erreur. Réessayez.";
     }
 }
 
-    </script>
-</body>
-</html>
+async function submitTransaction() {
+    const merchant = document.getElementById("tx-merchant").value.trim();
+    const amount = document.getElementById("tx-amount").value;
+    const category = document.getElementById("tx-category").value;
+    const is_essential = document.getElementById("tx-essential").checked;
+    if (!merchant || !amount) { showNotif("Remplissez tous les champs", "error"); return; }
+    const r = await fetch("/add-transaction", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({merchant, amount: parseFloat(amount), category, is_essential})
+    });
+    const d = await r.json();
+    if (d.status === "success") {
+        closeModal("txOverlay");
+        showNotif("Transaction ajoutée !");
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        showNotif("Erreur: " + d.detail, "error");
+    }
+}
+
+async function deleteTx(id) {
+    if (!confirm("Supprimer cette transaction ?")) return;
+    const r = await fetch(`/delete-transaction/${id}`, {method: "DELETE"});
+    const d = await r.json();
+    if (d.status === "success") { showNotif("Transaction supprimée"); setTimeout(() => location.reload(), 800); }
+}
+
+async function importFile(input, type) {
+    if (!input.files || !input.files[0]) return;
+    const status = document.getElementById("import-status");
+    status.style.display = "block";
+    status.style.background = "rgba(99,102,241,0.08)";
+    status.style.color = "#6366F1";
+    status.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Analyse IA en cours...`;
+
+    const formData = new FormData();
+    formData.append("file", input.files[0]);
+
+    const routes = {csv: "/import-csv", pdf: "/import-pdf", image: "/import-statement-image"};
+    try {
+        const r = await fetch(routes[type], {method: "POST", body: formData});
+        const d = await r.json();
+        if (d.status === "success") {
+            status.style.background = "rgba(16,185,129,0.08)";
+            status.style.color = "#10B981";
+            status.innerHTML = `<i class="fas fa-check"></i> ${d.message}`;
+            setTimeout(() => { closeModal("importOverlay"); location.reload(); }, 2000);
+        } else {
+            status.style.background = "rgba(239,68,68,0.08)";
+            status.style.color = "#EF4444";
+            status.innerHTML = `<i class="fas fa-xmark"></i> ${d.message}`;
+        }
+    } catch(e) {
+        status.style.color = "#EF4444";
+        status.innerHTML = `<i class="fas fa-xmark"></i> Erreur. Réessayez.`;
+    }
+}
+
+window.addEventListener("load", checkOverdraft);
