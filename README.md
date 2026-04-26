@@ -3,6 +3,7 @@
 
 > **Current Status:** This project is under active development. I am currently focusing on AI integration and dashboard UI enhancements. New features are pushed daily! 
 
+### 📸 App Preview
 ![SmartSave Dashboard Preview](./assets/appPic.png)
 
 **SmartSave** is not just a simple budget manager; it is an **intelligent financial coach**. Using **Artificial Intelligence**, the application analyzes your receipts, tracks your spending in real-time, and automatically adjusts your bank card balances.
