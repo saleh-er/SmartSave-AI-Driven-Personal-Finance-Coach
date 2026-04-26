@@ -10,7 +10,7 @@
 
 ---
 ### 📸 Registration Preview
-![Registration Page](./assets/AppPic1.png.png)
+![Registration Page](./assets/AppPic1.png)
 ## 🚀 Key Features
 
 * **🤖 AI Receipt Scanner**: Take a photo of your receipt and the AI automatically extracts the merchant, total amount, and individual items.
