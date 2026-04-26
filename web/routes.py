@@ -7,8 +7,8 @@ from io import StringIO, BytesIO
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, File, UploadFile, Request, Body, Depends, HTTPException
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi import APIRouter, File, UploadFile, Request, Body, Depends, HTTPException, Form
+from fastapi.responses import StreamingResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -16,16 +16,18 @@ from google import genai
 from dotenv import load_dotenv
 from fpdf import FPDF
 load_dotenv()
-from database import get_db
+from database import SessionLocal, get_db
 from models.models import BankCard, Transaction, Goal
 from services.ocr_engine import OCREngine
 from services.serenity_engine import SerenityEngine
 from api.open_ai_client import AICoach
+from passlib.context import CryptContext
 
 # Initialisation
 router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
 coach = AICoach()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Initialisation pour Gemini AI
 api_key = os.getenv("GEMINI_API_KEY")
@@ -96,8 +98,60 @@ MOCK_TRANSACTIONS = [
     {"id": 4, "merchant": "Loyer", "amount": 800.00, "category": "Housing", "is_essential": True},
     {"id": 5, "merchant": "Starbucks", "amount": 6.50, "category": "Food", "is_essential": False},
 ]
-
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:        db.close()
 # --- 2. ROUTES API ---
+# --- USER REGISTRATION LOGIC ---
+
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """Displays the registration page"""
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@router.post("/register")
+async def register_user(
+    username: str = Form(...), 
+    email: str = Form(...), 
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Handles the creation of a new user in PostgreSQL"""
+    try:
+        # 1. Hash the password for security (using the pwd_context already in your file)
+        hashed_pwd = pwd_context.hash(password)
+        
+        # 2. Check if user already exists
+        # Note: Ensure 'User' is imported from your models
+        from models.models import User 
+        
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        # 3. Create and save the new user
+        new_user = User(
+            username=username, 
+            email=email, 
+            hashed_password=hashed_pwd,
+            monthly_budget=1500.0  # Default budget for new users
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # 4. Redirect to login or home after success
+        # status_code 303 is required for redirecting after a POST
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=303)
+
+    except Exception as e:
+        db.rollback()
+        print(f"Registration Error: {e}")
+        raise HTTPException(status_code=500, detail="Could not create user")
 @router.post("/update-budget")
 async def update_budget(payload: dict = Body(...)):
     """Met à jour le plafond et le sauvegarde sur le disque"""
