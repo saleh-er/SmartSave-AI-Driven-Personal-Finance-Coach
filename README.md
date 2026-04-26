@@ -1,6 +1,6 @@
 # ✨ SmartSave - AI-Powered Personal Finance 💸
 
-![SmartSave Dashboard Preview](./appPic.png)
+![SmartSave Dashboard Preview](./assets/appPic.png)
 
 ![Status: Work in Progress](https://img.shields.io/badge/status-work--in--progress-orange?style=for-the-badge&logo=github)
 
@@ -9,7 +9,8 @@
 **SmartSave** is not just a simple budget manager; it is an **intelligent financial coach**. Using **Artificial Intelligence**, the application analyzes your receipts, tracks your spending in real-time, and automatically adjusts your bank card balances.
 
 ---
-
+### 📸 Registration Preview
+![Registration Page](./assets/AppPic1.png.png)
 ## 🚀 Key Features
 
 * **🤖 AI Receipt Scanner**: Take a photo of your receipt and the AI automatically extracts the merchant, total amount, and individual items.
