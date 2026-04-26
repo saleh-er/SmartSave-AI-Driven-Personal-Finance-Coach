@@ -32,3 +32,10 @@ class BankCard(Base):
     card_type = Column(String)     # Visa, Mastercard
     expiry_date = Column(String)   # MM/YY
     color_scheme = Column(String)  # Pour le design (ex: "neon-purple", "emerald")
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
