@@ -103,8 +103,14 @@ def get_db():
     try:
         yield db
     finally:        db.close()
-# --- 2. ROUTES API ---
+# --- . ROUTES API ---
 
+# --- 1. AUTHENTICATION & ENTRY POINT ---
+
+@router.get("/", response_class=HTMLResponse)
+async def welcome_page(request: Request):
+    """ENTRY POINT: Registration page is shown first"""
+    return templates.TemplateResponse("register.html", {"request": request})
 # --- USER REGISTRATION LOGIC ---
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
@@ -146,7 +152,7 @@ async def register_user(
         # 4. Redirect to login or home after success
         # status_code 303 is required for redirecting after a POST
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/home", status_code=303)
 
     except Exception as e:
         db.rollback()
@@ -154,7 +160,7 @@ async def register_user(
         raise HTTPException(status_code=500, detail="Could not create user")
 
 # Route for home page
-@router.get("/", response_class=HTMLResponse)
+@router.get("/home", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
     db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
