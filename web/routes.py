@@ -639,7 +639,6 @@ async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_d
             # On cherche la carte dans la base
             card = db.query(BankCard).filter(BankCard.id == int(card_id)).first()
             if card:
-                # On soustrait le montant de la dépense du solde de la carte
                 # Note: Assure-toi d'avoir un champ 'balance' dans ton modèle BankCard
                 if hasattr(card, 'balance'):
                     card.balance -= float(payload.get("amount"))
