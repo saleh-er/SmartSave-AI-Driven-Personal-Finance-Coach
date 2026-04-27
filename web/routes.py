@@ -177,7 +177,7 @@ async def login_user(
     
     # 2. Vérifier si l'utilisateur existe ET si le mot de passe est correct
     if user and pwd_context.verify(password, user.hashed_password):
-        return RedirectResponse(url="/dashboard", status_code=303)
+        return RedirectResponse(url="/home", status_code=303)
     else:
         # Si ça échoue, on peut renvoyer une erreur ou rediriger vers login
         raise HTTPException(status_code=401, detail="Invalid email or password")
