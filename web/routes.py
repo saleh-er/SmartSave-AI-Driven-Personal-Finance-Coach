@@ -159,6 +159,29 @@ async def register_user(
         print(f"Registration Error: {e}")
         raise HTTPException(status_code=500, detail="Could not create user")
 
+# Affiche la page de login
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+# Vérifie les identifiants
+@router.post("/login")
+async def login_user(
+    email: str = Form(...), 
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    from models.models import User
+    # 1. Chercher l'utilisateur par email
+    user = db.query(User).filter(User.email == email).first()
+    
+    # 2. Vérifier si l'utilisateur existe ET si le mot de passe est correct
+    if user and pwd_context.verify(password, user.hashed_password):
+        return RedirectResponse(url="/dashboard", status_code=303)
+    else:
+        # Si ça échoue, on peut renvoyer une erreur ou rediriger vers login
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
 # Route for home page
 @router.get("/home", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
