@@ -104,8 +104,8 @@ def get_db():
         yield db
     finally:        db.close()
 # --- 2. ROUTES API ---
-# --- USER REGISTRATION LOGIC ---
 
+# --- USER REGISTRATION LOGIC ---
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     """Displays the registration page"""
@@ -152,6 +152,34 @@ async def register_user(
         db.rollback()
         print(f"Registration Error: {e}")
         raise HTTPException(status_code=500, detail="Could not create user")
+
+# Route for home page
+@router.get("/", response_class=HTMLResponse)
+async def read_home(request: Request, db: Session = Depends(get_db)):
+    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
+    tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
+    cards = db.query(BankCard).all()
+    analysis = SerenityEngine.analyze_finances(
+        tx_to_analyze, budget=USER_CONFIG["monthly_budget"])
+
+    # On récupère le budget actuel depuis USER_CONFIG
+    current_budget = USER_CONFIG["monthly_budget"]
+    
+    # On calcule le reste basé sur ce budget dynamique
+    remaining = current_budget - analysis['total_spent']
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "name": "Saleh",
+        "cards": cards,
+        "score": analysis["score"],
+        "status": analysis["status"],
+        "remaining": round(remaining, 2),
+        "budget": current_budget,
+        "transactions": db_tx, 
+        "dynamic_alert": "ready to save " if not db_tx else None
+    })
+
 @router.post("/update-budget")
 async def update_budget(payload: dict = Body(...)):
     """Met à jour le plafond et le sauvegarde sur le disque"""
@@ -266,32 +294,7 @@ async def export_pdf(db: Session = Depends(get_db)):
         media_type="application/pdf", 
         headers={"Content-Disposition": "attachment; filename=smartsave_report.pdf"}
     )
-# Route for home page
-@router.get("/", response_class=HTMLResponse)
-async def read_home(request: Request, db: Session = Depends(get_db)):
-    db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
-    tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
-    cards = db.query(BankCard).all()
-    analysis = SerenityEngine.analyze_finances(
-        tx_to_analyze, budget=USER_CONFIG["monthly_budget"])
 
-    # On récupère le budget actuel depuis USER_CONFIG
-    current_budget = USER_CONFIG["monthly_budget"]
-    
-    # On calcule le reste basé sur ce budget dynamique
-    remaining = current_budget - analysis['total_spent']
-
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "name": "Saleh",
-        "cards": cards,
-        "score": analysis["score"],
-        "status": analysis["status"],
-        "remaining": round(remaining, 2),
-        "budget": current_budget,
-        "transactions": db_tx, 
-        "dynamic_alert": "ready to save " if not db_tx else None
-    })
 #router for settings page
 @router.get("/settings", response_class=HTMLResponse)
 async def read_settings(request: Request):
@@ -639,6 +642,7 @@ async def add_transaction(payload: dict = Body(...), db: Session = Depends(get_d
             # On cherche la carte dans la base
             card = db.query(BankCard).filter(BankCard.id == int(card_id)).first()
             if card:
+                # On soustrait le montant de la dépense du solde de la carte
                 # Note: Assure-toi d'avoir un champ 'balance' dans ton modèle BankCard
                 if hasattr(card, 'balance'):
                     card.balance -= float(payload.get("amount"))
