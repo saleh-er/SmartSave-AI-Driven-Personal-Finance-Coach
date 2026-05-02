@@ -117,6 +117,8 @@ async def login_user(email: str = Form(...), password: str = Form(...), db: Sess
 
 @router.get("/home", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
+    current_user = db.query(User).order_by(User.id.desc()).first()
+    user_display_name = current_user.username if current_user else "Guest"
     db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
     cards = db.query(BankCard).all()
@@ -124,9 +126,13 @@ async def read_home(request: Request, db: Session = Depends(get_db)):
     
     remaining = USER_CONFIG["monthly_budget"] - analysis['total_spent']
     return templates.TemplateResponse("index.html", {
-        "request": request, "name": "Saleh", "cards": cards,
-        "score": analysis["score"], "status": analysis["status"],
-        "remaining": round(remaining, 2), "budget": USER_CONFIG["monthly_budget"],
+        "request": request, 
+        "name": user_display_name,
+        "cards": cards,
+        "score": analysis["score"], 
+        "status": analysis["status"],
+        "remaining": round(remaining, 2), 
+        "budget": USER_CONFIG["monthly_budget"],
         "transactions": db_tx, "dynamic_alert": "ready to save" if not db_tx else None
     })
 
