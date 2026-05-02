@@ -15,82 +15,46 @@ from pydantic import BaseModel
 from google import genai
 from dotenv import load_dotenv
 from fpdf import FPDF
-load_dotenv()
-from database import SessionLocal, get_db
-from models.models import BankCard, Transaction, Goal
-from services.ocr_engine import OCREngine
-from services.serenity_engine import SerenityEngine
-from api.open_ai_client import AICoach
 from passlib.context import CryptContext
 
-# Initialisation
+# --- INITIALIZATION ---
+load_dotenv()
 router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
-coach = AICoach()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Initialisation pour Gemini AI
-api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    print("ERREUR : La clé GEMINI_API_KEY est introuvable dans le fichier .env")
-# Initialisation du client GenAI
-ai_client = genai.Client(api_key=api_key)
-# Pydantic model for adding a bank card
-class CardSchema(BaseModel):
-    bank_name: str
-    last_four: str
-    card_holder: str
-    card_type: str
-    expiry_date: str
-    color_scheme: str
-CONFIG_FILE = "user_settings.json"
-# Fix pour les imports : on ajoute la racine du projet
+# Fix imports for project root
 root_path = Path(__file__).parent.parent
 if str(root_path) not in sys.path:
     sys.path.insert(0, str(root_path))
 
-from fastapi import APIRouter, Request, Body, Depends, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
-
-# On importe les classes directement
-from database import get_db
-try:
-    from models.models import Transaction, Goal
-except ImportError:
-    from models import Transaction, Goal
-from services.budget_analyzer import BudgetAnalyzer
+from database import SessionLocal, get_db
+from models.models import BankCard, Transaction, Goal, User
+from services.ocr_engine import OCREngine
 from services.serenity_engine import SerenityEngine
 from api.open_ai_client import AICoach
 
-router = APIRouter()
-templates = Jinja2Templates(directory="web/templates")
 coach = AICoach()
-
+api_key = os.getenv("GEMINI_API_KEY")
+ai_client = genai.Client(api_key=api_key) if api_key else None
 CONFIG_FILE = "user_settings.json"
 
+# --- UTILS ---
 def save_budget_to_disk(amount):
-    """Enregistre le budget dans un fichier JSON"""
     with open(CONFIG_FILE, "w") as f:
         json.dump({"monthly_budget": float(amount)}, f)
 
 def load_budget_from_disk():
-    """Charge le budget depuis le fichier ou renvoie 1500 par défaut"""
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r") as f:
                 data = json.load(f)
                 return float(data.get("monthly_budget", 1500.0))
-        except Exception as e:
-            print(f"Erreur de lecture du budget: {e}")
-            return 1500.0
+        except: return 1500.0
     return 1500.0
 
-# --- 1. VARIABLES GLOBALES ---
 USER_CONFIG = {"monthly_budget": load_budget_from_disk()}
 chat_history = []
-
 MOCK_TRANSACTIONS = [
     {"id": 1, "merchant": "Netflix", "amount": 15.99, "category": "Subs", "is_essential": False},
     {"id": 2, "merchant": "Carrefour", "amount": 82.50, "category": "Food", "is_essential": True},
@@ -98,23 +62,20 @@ MOCK_TRANSACTIONS = [
     {"id": 4, "merchant": "Loyer", "amount": 800.00, "category": "Housing", "is_essential": True},
     {"id": 5, "merchant": "Starbucks", "amount": 6.50, "category": "Food", "is_essential": False},
 ]
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:        db.close()
-# --- . ROUTES API ---
 
-# --- 1. AUTHENTICATION & ENTRY POINT ---
+class CardSchema(BaseModel):
+    bank_name: str
+    last_four: str
+    card_holder: str
+    card_type: str
+    expiry_date: str
+    color_scheme: str
+
+# --- 1. AUTHENTICATION & ENTRY ---
 
 @router.get("/", response_class=HTMLResponse)
 async def welcome_page(request: Request):
-    """ENTRY POINT: Registration page is shown first"""
-    return templates.TemplateResponse("register.html", {"request": request})
-# --- USER REGISTRATION LOGIC ---
-@router.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
-    """Displays the registration page"""
+    """Entry gate for the app"""
     return templates.TemplateResponse("register.html", {"request": request})
 
 @router.post("/register")
@@ -124,90 +85,52 @@ async def register_user(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Handles the creation of a new user in PostgreSQL"""
     try:
-        # 1. Hash the password for security (using the pwd_context already in your file)
         hashed_pwd = pwd_context.hash(password)
-        
-        # 2. Check if user already exists
-        # Note: Ensure 'User' is imported from your models
-        from models.models import User 
-        
         existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        # 3. Create and save the new user
         new_user = User(
-            username=username, 
-            email=email, 
-            hashed_password=hashed_pwd,
-            monthly_budget=1500.0  # Default budget for new users
+            username=username, email=email, 
+            hashed_password=hashed_pwd, monthly_budget=1500.0
         )
-        
         db.add(new_user)
         db.commit()
-        db.refresh(new_user)
-        
-        # 4. Redirect to login or home after success
-        # status_code 303 is required for redirecting after a POST
-        from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/home", status_code=303)
-
     except Exception as e:
         db.rollback()
-        print(f"Registration Error: {e}")
-        raise HTTPException(status_code=500, detail="Could not create user")
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Affiche la page de login
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-# Vérifie les identifiants
 @router.post("/login")
-async def login_user(
-    email: str = Form(...), 
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    from models.models import User
-    # 1. Chercher l'utilisateur par email
+async def login_user(email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
-    
-    # 2. Vérifier si l'utilisateur existe ET si le mot de passe est correct
     if user and pwd_context.verify(password, user.hashed_password):
         return RedirectResponse(url="/home", status_code=303)
-    else:
-        # Si ça échoue, on peut renvoyer une erreur ou rediriger vers login
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+    raise HTTPException(status_code=401, detail="Invalid email or password")
 
-# Route for home page
+# --- 2. THE APP CONTENT (HOME) ---
+
 @router.get("/home", response_class=HTMLResponse)
 async def read_home(request: Request, db: Session = Depends(get_db)):
     db_tx = db.query(Transaction).order_by(Transaction.id.desc()).all()
     tx_to_analyze = db_tx if db_tx else MOCK_TRANSACTIONS
     cards = db.query(BankCard).all()
-    analysis = SerenityEngine.analyze_finances(
-        tx_to_analyze, budget=USER_CONFIG["monthly_budget"])
-
-    # On récupère le budget actuel depuis USER_CONFIG
-    current_budget = USER_CONFIG["monthly_budget"]
+    analysis = SerenityEngine.analyze_finances(tx_to_analyze, budget=USER_CONFIG["monthly_budget"])
     
-    # On calcule le reste basé sur ce budget dynamique
-    remaining = current_budget - analysis['total_spent']
-
+    remaining = USER_CONFIG["monthly_budget"] - analysis['total_spent']
     return templates.TemplateResponse("index.html", {
-        "request": request,
-        "name": "Saleh",
-        "cards": cards,
-        "score": analysis["score"],
-        "status": analysis["status"],
-        "remaining": round(remaining, 2),
-        "budget": current_budget,
-        "transactions": db_tx, 
-        "dynamic_alert": "ready to save " if not db_tx else None
+        "request": request, "name": "Saleh", "cards": cards,
+        "score": analysis["score"], "status": analysis["status"],
+        "remaining": round(remaining, 2), "budget": USER_CONFIG["monthly_budget"],
+        "transactions": db_tx, "dynamic_alert": "ready to save" if not db_tx else None
     })
+
+# route for updating budget
 
 @router.post("/update-budget")
 async def update_budget(payload: dict = Body(...)):
