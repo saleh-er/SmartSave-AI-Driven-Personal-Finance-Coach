@@ -307,7 +307,8 @@ from services.budget_analyzer import BudgetAnalyzer
 @router.post("/chat")
 async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_db)):
     user_msg = payload.get("message")
-    
+    current_user = db.query(User).order_by(User.id.desc()).first()
+    user_display_name = current_user.username if current_user else "Guest"
     # 1. Récupérer les vraies transactions en base pour le contexte
     db_tx = db.query(Transaction).all()
     tx_summary = ""
@@ -326,7 +327,7 @@ async def chat_with_coach(payload: dict = Body(...), db: Session = Depends(get_d
         "content": f"""
         You are a high-level personal financial coach. 
         User Context:
-        - Name: Saleh
+        - Name: {user_display_name}
         - Current Serenity Score: {analysis['score']}/100
         - Monthly Budget Limit: {USER_CONFIG['monthly_budget']}€
         - Recent Transactions: {tx_summary}
