@@ -558,11 +558,14 @@ async def read_analytics(request: Request, period: str = "week", db: Session = D
         "category_insights": category_insights
     })
 @router.get("/coach", response_class=HTMLResponse)
-async def read_coach(request: Request):
+async def read_coach(request: Request, db: Session = Depends(get_db)):
+    current_user = db.query(User).order_by(User.id.desc()).first()
+    user_display_name = current_user.username if current_user else "Guest"
     analysis = SerenityEngine.analyze_finances(MOCK_TRANSACTIONS)
     return templates.TemplateResponse("coach.html", {
         "request": request, 
-        "analysis": analysis
+        "analysis": analysis,
+        "name": user_display_name
     })
 # route  delete card by id
 @router.delete("/delete-card/{card_id}")
