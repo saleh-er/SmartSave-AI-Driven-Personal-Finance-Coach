@@ -58,3 +58,5 @@ If you encounter a `rebase-merge` error on Windows, run:
 `Remove-Item -Force -Recurse .git/rebase-merge`
 ### authors: 
 MD5 Hetic Paris 
+####
+“Your finances deserve more than tracking — they deserve intelligence.”
